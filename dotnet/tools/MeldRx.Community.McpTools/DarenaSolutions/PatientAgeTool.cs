@@ -4,7 +4,7 @@ using MeldRx.Community.Mcp.Core.Extensions;
 using MeldRx.Community.Mcp.Core.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using ModelContextProtocol.Protocol.Types;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace MeldRx.Community.McpTools.DarenaSolutions;
