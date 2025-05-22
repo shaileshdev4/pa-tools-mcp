@@ -28,55 +28,31 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
 
             try
             {
-                using (
-                    var buildProcess = new ProcessHelper(
-                        "dotnet",
-                        "publish -c Release -r linux-x64 -o publish",
-                        workingDirectory: projectDir
-                    )
-                )
-                {
-                    await buildProcess.RunAsync();
-                }
-
-                using (
-                    var dockerBuildProcess = new ProcessHelper(
-                        "docker",
-                        "build -t mcpserver .",
-                        workingDirectory: projectDir
-                    )
-                )
-                {
-                    await dockerBuildProcess.RunAsync();
-                }
-
-                using var dockerRunProcess = new ProcessHelper(
-                    "docker",
-                    "run --name TestMcpServer -d -p 3056:5000 mcpserver:latest",
-                    workingDirectory: projectDir
-                );
-
-                await dockerRunProcess.RunAsync();
+                await SetupDockerAsync(projectDir);
                 if (!await TryWaitUntilServerIsReadyAsync(projectDir))
                 {
                     return false;
                 }
 
-                await using var mcpClient = await CreateClientAsync();
-                var tools = await mcpClient.ListToolsAsync();
-                if (tools.Count == 0)
+                await using (var mcpClient = await CreateClientAsync())
                 {
-                    ConsoleUtilities.WriteErrorLine(
-                        $"ERROR: No tools were returned by the MCP server at project location: {projectDir}"
-                    );
+                    var tools = await mcpClient.ListToolsAsync();
+                    if (tools.Count == 0)
+                    {
+                        ConsoleUtilities.WriteErrorLine(
+                            $"ERROR: No tools were returned by the MCP server at project location: {projectDir}"
+                        );
 
-                    return false;
+                        return false;
+                    }
+
+                    var toolNames = tools.Select(x => x.Name).ToList();
+                    Console.WriteLine(
+                        $"SUCCESS: Tools returned: {string.Join(" | ", toolNames)}. Project: {projectDir}"
+                    );
                 }
 
-                var toolNames = tools.Select(x => x.Name).ToList();
-                Console.WriteLine(
-                    $"SUCCESS: Tools returned: {string.Join(" | ", toolNames)}. Project: {projectDir}"
-                );
+                await CleanupDockerAsync();
             }
             catch (ProcessHelperException exception)
             {
@@ -129,6 +105,52 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
                 await Task.Delay(1500);
             }
         }
+    }
+
+    private async Task SetupDockerAsync(string projectDir)
+    {
+        using (
+            var buildProcess = new ProcessHelper(
+                "dotnet",
+                "publish -c Release -r linux-x64 -o publish",
+                workingDirectory: projectDir
+            )
+        )
+        {
+            await buildProcess.RunAsync();
+        }
+
+        using (
+            var dockerBuildProcess = new ProcessHelper(
+                "docker",
+                "build -t mcpserver .",
+                workingDirectory: projectDir
+            )
+        )
+        {
+            await dockerBuildProcess.RunAsync();
+        }
+
+        using var dockerRunProcess = new ProcessHelper(
+            "docker",
+            "run --rm --name TestMcpServer -d -p 3056:5000 mcpserver:latest",
+            workingDirectory: projectDir
+        );
+
+        await dockerRunProcess.RunAsync();
+    }
+
+    private async Task CleanupDockerAsync()
+    {
+        using (
+            var containerStopProcess = new ProcessHelper("docker", "container stop TestMcpServer")
+        )
+        {
+            await containerStopProcess.RunAsync();
+        }
+
+        using var imageRemoveProcess = new ProcessHelper("docker", "image rm mcpserver:latest");
+        await imageRemoveProcess.RunAsync();
     }
 
     private bool TryGetProjectDirectories(
