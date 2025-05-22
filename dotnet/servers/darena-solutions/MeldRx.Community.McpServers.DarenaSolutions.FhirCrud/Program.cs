@@ -22,7 +22,7 @@ foreach (var mcpToolType in mcpToolTypes)
 builder
     .Services.AddHttpContextAccessor()
     .AddMcpServer()
-    .WithHttpTransport()
+    .WithHttpTransport(options => options.Stateless = true)
     .WithListToolsHandler(McpClientListToolsService.Handler)
     .WithCallToolHandler(McpClientCallToolService.Handler);
 
