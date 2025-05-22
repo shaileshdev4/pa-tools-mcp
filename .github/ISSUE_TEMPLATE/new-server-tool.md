@@ -13,8 +13,10 @@ assignees: ''
 ### Acceptance Criteria
 - *Provide list of acceptance criteria*
 
-### Programming Language
-The feature can be implemented in any (not all) language selected. (EG: If both `dotnet` and `typescript` are selected, the feature can be implemented in dotnet OR typescript).
+
+### Programming Language[^1].
 
 - [ ] `dotnet`
 - [ ] `typescript`
+
+[^1]: The feature can be implemented in any (not all) language selected. (EG: If both `dotnet` and `typescript` are selected, the feature can be implemented in dotnet OR typescript).
