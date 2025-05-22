@@ -10,6 +10,10 @@ _Provide a brief description of the PR_
 - [ ] Each of my project names start with `MeldRx.Community.McpServers.{Your Identifier}.`
 - [ ] Each of my servers have the option of connecting to it openly to verify tools
       can be listed
+- [ ] Each of my servers has a `Dockerfile` at the root of the directory that contains
+      the `.csproj` file
+- [ ] Each of my servers has a `Dockerfile` that opens port `5000` inside the container
+      to the MCP server
 - [ ] Each of my servers has an accompanying README file to explain its purpose
       and other details
 - [ ] I ran the csharpier formatting tool
