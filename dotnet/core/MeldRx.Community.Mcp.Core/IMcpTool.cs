@@ -1,6 +1,6 @@
 using MeldRx.Community.Mcp.Core.Models;
 using Microsoft.AspNetCore.Http;
-using ModelContextProtocol.Protocol.Types;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace MeldRx.Community.Mcp.Core;

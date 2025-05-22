@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using MeldRx.Community.Mcp.Core;
 using MeldRx.Community.Mcp.Core.Models;
-using ModelContextProtocol.Protocol.Types;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace MeldRx.Community.McpServers.DarenaSolutions.FhirCrud.Services;

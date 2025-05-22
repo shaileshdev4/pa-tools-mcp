@@ -3,8 +3,7 @@ using Hl7.Fhir.Serialization;
 using MeldRx.Community.Mcp.Core;
 using MeldRx.Community.Mcp.Core.Extensions;
 using MeldRx.Community.Mcp.Core.Models;
-using MeldRx.Community.McpServers.DarenaSolutions.FhirCrud.Services;
-using ModelContextProtocol.Protocol.Types;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace MeldRx.Community.McpServers.DarenaSolutions.FhirCrud.Tools;

@@ -1,5 +1,5 @@
 using MeldRx.Community.Mcp.Core;
-using ModelContextProtocol.Protocol.Types;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace MeldRx.Community.McpServers.DarenaSolutions.FhirCrud.Services;
