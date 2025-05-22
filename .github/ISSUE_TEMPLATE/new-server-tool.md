@@ -13,7 +13,6 @@ assignees: ''
 ### Acceptance Criteria
 - *Provide list of acceptance criteria*
 
-
 ### Programming Language[^1].
 
 - [ ] `dotnet`
