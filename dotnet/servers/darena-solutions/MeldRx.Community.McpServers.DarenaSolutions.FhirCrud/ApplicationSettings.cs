@@ -10,6 +10,5 @@ public class ApplicationSettings
 
     public bool UseIdentityServerAuthentication { get; set; }
 
-    // Modified file
     public List<Client> DefaultClients { get; set; } = [];
 }
