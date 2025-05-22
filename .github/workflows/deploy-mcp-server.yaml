@@ -1,0 +1,26 @@
+on:
+  push:
+    paths:
+      - "dotnet/servers/**"
+
+jobs:
+  deploy_mcp_servers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build pr-validator
+        working-directory: dotnet/pr-validator/MeldRx.Community.PrValidator
+        run: |
+          dotnet publish -c Release -r linux-x64
+
+      - name: Run deployer
+        working-directory: dotnet/pr-validator/MeldRx.Community.PrValidator/bin/Release/net8.0/linux-x64
+        run: |
+          CHANGED_FILES="$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} --diff-filter=A | paste -sd ' ' -)";
+
+          echo "-- Verifying build & docker --";
+          ./pr-validator deploy-mcp-servers -n $CHANGED_FILES;
