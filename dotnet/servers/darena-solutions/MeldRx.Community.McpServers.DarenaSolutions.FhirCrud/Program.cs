@@ -67,6 +67,6 @@ else
     app.MapMcp();
 }
 
-app.MapGet("/hello-world", () => $"Hello World! Current time is: {DateTime.UtcNow:O}");
+app.MapGet("/hello-world", () => $"Hello World [UPDATE #2]! Current time is: {DateTime.UtcNow:O}");
 
 app.Run();
