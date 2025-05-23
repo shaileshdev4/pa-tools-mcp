@@ -1,10 +1,10 @@
 on:
   pull_request:
     paths:
-      - "dotnet/default/MeldRx.Community.McpTools/**"
+      - "typescript/servers/**"
 
 jobs:
-  check_dotnet_tools_restrictions:
+  check_dotnet_servers_restrictions:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,8 +22,5 @@ jobs:
         run: |
           CHANGED_FILES="$(git diff --name-only HEAD^1 HEAD | paste -sd ' ' -)";
 
-          echo "-- Verifying ServiceCollectionExtensions.cs --";
-          ./pr-validator verify-sc;
-
-          echo "-- Verifying directory structure --";
-          ./pr-validator verify-tools-dir -l Net -c $CHANGED_FILES;
+          echo "-- Verifying build & docker --";
+          ./pr-validator verify-list-tools -l Typescript -c $CHANGED_FILES;

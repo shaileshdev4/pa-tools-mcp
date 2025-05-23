@@ -1,7 +1,7 @@
 on:
   pull_request:
     paths:
-      - "dotnet/default/MeldRx.Community.McpTools/**"
+      - "typescript/default/tools/**"
 
 jobs:
   check_dotnet_tools_restrictions:
@@ -26,4 +26,4 @@ jobs:
           ./pr-validator verify-sc;
 
           echo "-- Verifying directory structure --";
-          ./pr-validator verify-tools-dir -l Net -c $CHANGED_FILES;
+          ./pr-validator verify-tools-dir -l Typescript -c $CHANGED_FILES;
