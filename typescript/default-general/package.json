@@ -1,0 +1,34 @@
+{
+  "name": "darenasolutions-default-server-ts",
+  "version": "1.0.0",
+  "description": "Package that contains the default MCP server for typescript",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "npx tsx index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darena-solutions/meldrx-community-mcp.git"
+  },
+  "author": "Darena Solutions",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/darena-solutions/meldrx-community-mcp/issues"
+  },
+  "homepage": "https://github.com/darena-solutions/meldrx-community-mcp#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "axios": "^1.9.0",
+    "date-fns": "^4.1.0",
+    "express": "^5.1.0",
+    "jose": "^6.0.11",
+    "zod": "^3.25.23"
+  }
+}
