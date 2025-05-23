@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeldRx.Community.PrValidator", "MeldRx.Community.PrValidator\MeldRx.Community.PrValidator.csproj", "{5CD432DD-137C-422F-82AD-50B58F6CE86D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeldRx.Community.McpTools", "..\tools\MeldRx.Community.McpTools\MeldRx.Community.McpTools.csproj", "{DD1D5EBF-E562-4B97-8D22-2DF671AF1F80}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeldRx.Community.McpTools", "..\default\MeldRx.Community.McpTools\MeldRx.Community.McpTools.csproj", "{DD1D5EBF-E562-4B97-8D22-2DF671AF1F80}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

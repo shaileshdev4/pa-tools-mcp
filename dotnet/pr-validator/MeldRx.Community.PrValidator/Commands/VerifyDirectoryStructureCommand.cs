@@ -10,6 +10,14 @@ public class VerifyDirectoryStructureCommand : ICommand
 {
     [Option('c', "changed-files", HelpText = "A list of files that were changed")]
     public IEnumerable<string> ChangedFiles { get; set; } = [];
+
+    [Option(
+        'l',
+        "language",
+        HelpText = "The programming language being used",
+        Default = ProgrammingLanguage.Net
+    )]
+    public ProgrammingLanguage Language { get; set; } = ProgrammingLanguage.Net;
 }
 
 public class VerifyDirectoryStructureCommandHandler
@@ -23,7 +31,6 @@ public class VerifyDirectoryStructureCommandHandler
             return Task.FromResult(true);
         }
 
-        var rootDir = FileUtilities.GetRepoRootDirectory();
         var hasErrors = false;
         foreach (var file in files)
         {
@@ -32,32 +39,17 @@ public class VerifyDirectoryStructureCommandHandler
                 continue;
             }
 
-            if (
-                file.Contains(".csproj", StringComparison.InvariantCultureIgnoreCase)
-                || file.Contains(".sln", StringComparison.InvariantCultureIgnoreCase)
-            )
+            if (ContainsInvalidFile(command.Language, file))
             {
-                ConsoleUtilities.WriteErrorLine(
-                    $"ERROR: Cannot contain project or solution files for MCP tools. Detected file with error: {file}"
-                );
-
                 hasErrors = true;
                 continue;
             }
 
-            var fullPath = Path.Combine(rootDir, file);
-            var di = new DirectoryInfo(
-                Path.GetDirectoryName(fullPath)
-                    ?? throw new InvalidOperationException(
-                        $"The directory of file '{file}' could not be read"
-                    )
-            );
-
-            if (!FileExistsInToolsDirectory(di))
+            if (!FileExistsInToolsDirectory(command.Language, file))
             {
                 ConsoleUtilities.WriteErrorLine(
-                    $"ERROR: When working with tools, all files must exist in the /{DirectoryNames.McpToolsProject} directory. "
-                        + $"Detected file with error: {file}"
+                    $"ERROR: When working with the default MCP server, all files must exist in the /{DirectoryNames.DotnetMcpToolsProject} "
+                        + $"directory. Detected file with error: {file}"
                 );
 
                 hasErrors = true;
@@ -67,13 +59,68 @@ public class VerifyDirectoryStructureCommandHandler
         return Task.FromResult(!hasErrors);
     }
 
-    private bool FileExistsInToolsDirectory(DirectoryInfo di)
+    private bool ContainsInvalidFile(ProgrammingLanguage language, string file)
     {
-        if (di.Name == DirectoryNames.McpToolsProject)
+        if (language == ProgrammingLanguage.Net)
         {
-            return true;
+            if (
+                file.Contains(".csproj", StringComparison.InvariantCultureIgnoreCase)
+                || file.Contains(".sln", StringComparison.InvariantCultureIgnoreCase)
+            )
+            {
+                ConsoleUtilities.WriteErrorLine(
+                    $"ERROR: Cannot contain project or solution files for default MCP server. Detected file with error: {file}"
+                );
+
+                return false;
+            }
+        }
+        else
+        {
+            if (
+                file.Contains("package.json", StringComparison.InvariantCultureIgnoreCase)
+                || file.Contains("package-lock.json", StringComparison.InvariantCultureIgnoreCase)
+            )
+            {
+                ConsoleUtilities.WriteErrorLine(
+                    $"ERROR: Cannot contain package files for default MCP server. Detected file with error: {file}"
+                );
+
+                return false;
+            }
         }
 
-        return di.Parent is not null && FileExistsInToolsDirectory(di.Parent);
+        return true;
+    }
+
+    private bool FileExistsInToolsDirectory(ProgrammingLanguage language, string file)
+    {
+        if (
+            language == ProgrammingLanguage.Net
+            && !file.StartsWith($"{DirectoryNames.AbsoluteDotnetMcpToolsProject}/")
+        )
+        {
+            ConsoleUtilities.WriteErrorLine(
+                $"ERROR: When working with the default MCP server, all files must exist in the /{DirectoryNames.AbsoluteDotnetMcpToolsProject} "
+                    + $"directory. Detected file with error: {file}"
+            );
+
+            return false;
+        }
+
+        if (
+            language == ProgrammingLanguage.Typescript
+            && !file.StartsWith($"{DirectoryNames.AbsoluteTypescriptMcpTools}/")
+        )
+        {
+            ConsoleUtilities.WriteErrorLine(
+                $"ERROR: When working with the default MCP server, all files must exist in the /{DirectoryNames.AbsoluteTypescriptMcpTools} "
+                    + $"directory. Detected file with error: {file}"
+            );
+
+            return false;
+        }
+
+        return true;
     }
 }

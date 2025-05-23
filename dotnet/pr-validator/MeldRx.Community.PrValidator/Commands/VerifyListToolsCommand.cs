@@ -8,6 +8,14 @@ public class VerifyListToolsCommand : ICommand
 {
     [Option('c', "changed-files", HelpText = "A list of files that were changed")]
     public IEnumerable<string> ChangedFiles { get; set; } = [];
+
+    [Option(
+        'l',
+        "language",
+        HelpText = "The programming language being used",
+        Default = ProgrammingLanguage.Net
+    )]
+    public ProgrammingLanguage Language { get; set; } = ProgrammingLanguage.Net;
 }
 
 public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsCommand>
@@ -110,17 +118,6 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
     private async Task SetupDockerAsync(string projectDir)
     {
         using (
-            var buildProcess = new ProcessHelper(
-                "dotnet",
-                "publish -c Release -r linux-x64 -o publish",
-                workingDirectory: projectDir
-            )
-        )
-        {
-            await buildProcess.RunAsync();
-        }
-
-        using (
             var dockerBuildProcess = new ProcessHelper(
                 "docker",
                 "build -t mcpserver .",
@@ -180,7 +177,8 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
             }
 
             if (
-                !TryFindProjectDirectory(fi.Directory, file, out var projectDi) || projectDi is null
+                !TryFindProjectDirectory(command.Language, fi.Directory, file, out var projectDi)
+                || projectDi is null
             )
             {
                 return false;
@@ -194,6 +192,7 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
     }
 
     private bool TryFindProjectDirectory(
+        ProgrammingLanguage language,
         DirectoryInfo di,
         string startFile,
         out DirectoryInfo? projectDi
@@ -207,9 +206,22 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
             foreach (var fi in di.EnumerateFiles())
             {
                 if (
-                    string.Equals(
+                    language == ProgrammingLanguage.Net
+                    && string.Equals(
                         ".csproj",
                         fi.Extension,
+                        StringComparison.InvariantCultureIgnoreCase
+                    )
+                )
+                {
+                    projectFile = fi.FullName;
+                }
+
+                if (
+                    language == ProgrammingLanguage.Typescript
+                    && string.Equals(
+                        "package.json",
+                        fi.Name,
                         StringComparison.InvariantCultureIgnoreCase
                     )
                 )

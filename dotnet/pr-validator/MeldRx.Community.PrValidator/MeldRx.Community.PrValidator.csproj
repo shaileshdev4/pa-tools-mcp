@@ -7,7 +7,7 @@
     <AssemblyName>pr-validator</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\tools\MeldRx.Community.McpTools\MeldRx.Community.McpTools.csproj" />
+    <ProjectReference Include="..\..\default\MeldRx.Community.McpTools\MeldRx.Community.McpTools.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />

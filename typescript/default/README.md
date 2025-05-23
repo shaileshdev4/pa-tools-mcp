@@ -6,6 +6,8 @@ You can contribute to the default typescript MCP server in this directory. Contr
 is limited to creating tools in the `/tools` directory and modifications outside
 of this directory are not allowed.
 
+The default MCP server uses [express](https://expressjs.com/) as its web framework.
+
 If you require more control over your MCP server with your own npm packages and
 your own programming rules, consider [creating your own MCP server](../servers) instead
 of contributing to the default MCP server.

@@ -23,4 +23,4 @@ jobs:
           CHANGED_FILES="$(git diff --name-only HEAD^1 HEAD | paste -sd ' ' -)";
 
           echo "-- Verifying build & docker --";
-          ./pr-validator verify-list-tools -c $CHANGED_FILES;
+          ./pr-validator verify-list-tools -l Net -c $CHANGED_FILES;

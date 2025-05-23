@@ -26,4 +26,4 @@ jobs:
           ./pr-validator verify-sc;
 
           echo "-- Verifying directory structure --";
-          ./pr-validator verify-tools-dir -c $CHANGED_FILES;
+          ./pr-validator verify-tools-dir -l Net -c $CHANGED_FILES;

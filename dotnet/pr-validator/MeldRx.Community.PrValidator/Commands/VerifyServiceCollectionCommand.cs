@@ -22,8 +22,8 @@ public class VerifyServiceCollectionCommandHandler : ICommandHandler<VerifyServi
             ?? throw new InvalidOperationException("Executing assembly location not found.");
 
         var parentDirectory = FindParentDirectory(new DirectoryInfo(executingPath));
-        var workingDirectory = Path.Combine(parentDirectory.FullName, "tools");
-        var solutionPath = Path.Combine(workingDirectory, "MeldRx.Community.McpTools.sln");
+        var workingDirectory = Path.Combine(parentDirectory.FullName, "default");
+        var solutionPath = Path.Combine(workingDirectory, "MeldRx.Community.Default.sln");
 
         if (!File.Exists(solutionPath))
         {
@@ -34,7 +34,7 @@ public class VerifyServiceCollectionCommandHandler : ICommandHandler<VerifyServi
 
         var workspace = MSBuildWorkspace.Create();
         var solution = await workspace.OpenSolutionAsync(solutionPath);
-        var project = solution.Projects.First(x => x.Name == "MeldRx.Community.McpTools");
+        var project = solution.Projects.First(x => x.Name == DirectoryNames.DotnetMcpToolsProject);
         var document = project.Documents.First(x => x.Name == "ServiceCollectionExtensions.cs");
         var model =
             await document.GetSemanticModelAsync()
@@ -106,7 +106,7 @@ public class VerifyServiceCollectionCommandHandler : ICommandHandler<VerifyServi
 
     private DirectoryInfo FindParentDirectory(DirectoryInfo currentDirectory)
     {
-        if (currentDirectory.Name == "dotnet")
+        if (currentDirectory.Name == DirectoryNames.Dotnet)
         {
             return currentDirectory;
         }
