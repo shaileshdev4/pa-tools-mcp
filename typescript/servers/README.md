@@ -9,38 +9,28 @@ in the MeldRx ecosystem.
 ## Helpful Links
 
 - [MCP Specification](https://modelcontextprotocol.io/specification/2025-03-26)
-- [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
-- [Example Dockerfile](darena-solutions/MeldRx.Community.McpServers.DarenaSolutions.FhirCrud/Dockerfile)
-- [Example MCP Server](darena-solutions/MeldRx.Community.McpServers.DarenaSolutions.FhirCrud)
-- [CSharpier Formatter](https://csharpier.com/)
-- [CSharpier IDE Setup](https://csharpier.com/docs/Editors)
+- [MCP Typescript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+- [Example Dockerfile](darena-solutions/fhir-crud/Dockerfile)
+- [Example MCP Server](darena-solutions/fhir-crud)
+- [Prettier Formatter](https://prettier.io/)
+- [Prettier IDE Setup](https://prettier.io/docs/editors)
 
 ## Restrictions
 
 - In the `/servers` directory, create a folder that represents you as an individual
   or an organization. For example `/servers/darena-solutions`.
-- Create a new solution with a project in that directory. There should only be one
-  solution which contains multiple projects, each project representing a different
-  MCP server you build.
-- Each project name must begin with `MeldRx.Community.McpServers.{Your Identifier}.`.
-  For example: `MeldRx.Community.McpTools.DarenaSolutions.`.
+- Create an additional directory with a project within the previously created directory
+  for each MCP server you'd like to build. (EG: `/servers/darena-solutions/fhir-crud`, `/servers/darena-solutions/patient-encounter`).
+- The directory that contains your MCP server should be alpha-numeric only. Dashes
+  are also allowed. The directory name cannot exceed 16 characters.
 - Ensure that you have a `GET /hello-world` endpoint. This will be used to verify
   connectivity to your MCP server. The endpoint should return a 2xx successful code.
-
-### Core Project
-
-You are free to create the MCP server as you see fit. We also provide a core project
-that can provide some utilities and helpers that can help get you started.
-
-To add the core project, in your solution, add an existing project, and add the
-existing core project located in `../core/MeldRx.Community.Mcp.Core/MeldRx.Community.Mcp.Core.csproj`.
-You can then reference this project with any of your server projects.
 
 ### Dockerfile
 
 You must have a `Dockerfile` for your project that we can use to build and deploy
 your application. This file must exist at the root of your project (the same directory
-as the `.csproj` file).
+as the `package.json` file).
 
 We will run the following command against your Dockerfile:
 
@@ -53,7 +43,7 @@ We will then run it with:
 Ensure the Dockerfile can build your project and have the project run on port `5000`
 inside the container.
 
-- [Example Dockerfile](darena-solutions/MeldRx.Community.McpServers.DarenaSolutions.FhirCrud/Dockerfile)
+- [Example Dockerfile](darena-solutions/fhir-crud/Dockerfile)
 
 ### MCP Server Verification
 
@@ -63,9 +53,9 @@ Your MCP server should return at least one tool.
 
 The MCP server should not require authentication for us to perform this verification.
 If authentication is required, one option is to allow an open request when in the
-`Development` environment, but require authentication in other environments. Our
-process will set the `ASPNETCORE_ENVIRONMENT` environment variable to `Development`
-when performing this verification.
+`development` environment, but require authentication in other environments. Our
+process will set the `NODE_ENV` environment variable to `development` when performing
+this verification.
 
 We make a StreamableHttp connection to your server (not SSE). Your MCP endpoint
 should be at the root level and should not be in separate path.
@@ -96,4 +86,4 @@ MCP server in the MeldRx ecosystem.
 
 ## Example Project
 
-An example project has been added for reference: [Example Project](darena-solutions)
+An example project has been added for reference: [Example Project](darena-solutions/fhir-crud)

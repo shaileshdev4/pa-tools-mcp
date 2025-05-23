@@ -9,7 +9,11 @@ const port = 5000;
 
 app.use(express.json());
 
-app.post("/mcp", async (req, res) => {
+app.get("/hello-world", async (_, res) => {
+  res.status(200).send("Hello World!");
+});
+
+app.post("/", async (req, res) => {
   try {
     const server = new McpServer({
       name: "Typescript Template",
