@@ -4,7 +4,7 @@ on:
       - "typescript/servers/**"
 
 jobs:
-  check_dotnet_servers_restrictions:
+  check_typescript_servers_restrictions:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

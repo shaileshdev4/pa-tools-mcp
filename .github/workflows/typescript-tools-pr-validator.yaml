@@ -4,7 +4,7 @@ on:
       - "typescript/default/tools/**"
 
 jobs:
-  check_dotnet_tools_restrictions:
+  check_typescript_tools_restrictions:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
