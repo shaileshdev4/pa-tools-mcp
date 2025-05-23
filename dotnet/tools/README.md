@@ -1,27 +1,31 @@
 # Contributing DotNet Tools
 
 ## Overview
-You can contribute open source tools in this directory. These tools will then be made available to the community as nuget
-packages.
 
-> [!NOTE]
-> Since these tools will be available as nuget packages to the community, there are additional restrictions to be aware
-> of in contrast to creating your own MCP server which houses your tools.
+You can contribute to the default dotnet MCP server in this directory. Contribution
+is limited to creating tools in the `/MeldRx.Community.McpTools` project and modifications
+outside of this project are not allowed.
 
-We provide a core project that can provide some utilities and helpers that can help get build tools.
+If you require more control over your MCP server with your own nuget packages and
+your own programming rules, consider [creating your own MCP server](../servers) instead
+of contributing to the default MCP server.
 
 ## Restrictions
-- In the project, create a directory that represents you as an individual or an organization. For example `DarenaSolutions`.
+
+- In the `/MeldRx.Community.McpTools` project, create a directory that represents
+  you as an individual or an organization. For example `/MeldRx.Community.McpTools/DarenaSolutions`.
   - Follow c# conventions and ensure this directory is pascal-cased.
 - Add your tools and any additional code that your tool requires to run.
-- All MCP tools in the directory must implement the `IMcpTool` interface located in `MeldRx.Community.Mcp.Core`.
+- All MCP tools in the directory must implement the `IMcpTool` interface located
+  in `MeldRx.Community.Mcp.Core`.
 
 ### Registering MCP Tools
-After you have created your tools, you will need to update the top level `ServiceCollectionExtensions.cs` file so that the
-tool can be registered.
 
-In the file, create a new private extension method. This method must begin with `Add` and end with `McpTool` or `McpTools`.
-This method should register all your tools and dependent services. Finally, update the public extension method `AddMcpTools`
+After you have created your tools, you will need to update the top level `/MeldRx.Community.McpTools/ServiceCollectionExtensions.cs` file so that the tool can be registered.
+
+In the file, create a new private extension method. This method must begin with
+`Add` and end with `McpTool` or `McpTools`. This method should register all your
+tools and dependent services. Finally, update the public extension method `AddMcpTools`
 so that it calls your private extension.
 
 Your tools should not be registered as a singleton.
@@ -35,7 +39,7 @@ public static class ServiceCollectionExtensions
     {
         return services.AddPatientAgeMcpTool();
     }
-    
+
     private static IServiceCollection AddPatientAgeMcpTool(this IServiceCollection services)
     {
         return services
@@ -45,21 +49,26 @@ public static class ServiceCollectionExtensions
 }
 ```
 
-This method above registers a scoped MCP tool and registers an `IPatientSearchService` service.
+This method above registers a scoped MCP tool and registers an `IPatientSearchService`
+service.
 
 ### Formatting
-This repository uses [csharpier](https://csharpier.com/) for formatting. Set this up in your IDE and ensure your code is
-formatted before creating a PR.
+
+This repository uses [csharpier](https://csharpier.com/) for formatting. Set this
+up in your IDE and ensure your code is formatted before creating a PR.
 
 ### Package Dependencies
-You are limited to a set of external library dependencies (nuget packages). If your tool requires a nuget package that is
-not listed here, send us a request and we will review it.
 
-- `Hl7.Fhir.R4` - 5.11.7
-- `ModelContextProtocol.AspNetCore` - 0.1.0-preview.13
-- `System.IdentityModel.Tokens.Jwt` - 8.10.0
+You are limited to the packages listed in `/MeldRx.Community.McpTools//MeldRx.Community.McpTools.csproj`
+and you cannot install additional packages. If you require an additional package
+that is not listed there, contact us and we will review the package and make a determination.
+
+[Creating your own MCP server](../servers) is also an option which does not have
+this limitation.
 
 ## Pull Requests
-Once you are ready with your project, you can create a PR to the main branch. Several github workflows will begin ensuring
-that your submission follows the restrictions. A DarenaSolutions maintainer will review your PR. Once any comments or changes
+
+Once you are ready with your project, you can create a PR to the main branch. Several
+github workflows will begin ensuring that your submission follows the restrictions.
+A Darena Solutions maintainer will review your PR. Once any comments or changes
 have been resolved and the PR has been approved, you may merge your changes.

@@ -13,4 +13,4 @@ to the developer that successfully merges and implements the requested feature.
   - [Create an MCP Server](dotnet/servers)
   - [Create an MCP Tool](dotnet/tools)
 - Typescript
-  - _Comming Soon_
+  - [Contributing to the Default MCP Server](typescript/default)

@@ -4,7 +4,7 @@
   "description": "Package that contains the default MCP server for typescript",
   "main": "index.ts",
   "scripts": {
-    "dev": "npx tsx index.ts",
+    "start": "npx tsx index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
