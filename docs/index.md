@@ -1,17 +1,10 @@
-# Welcome to MkDocs
+# Standardized Healthcare Agent Remote Protocol (SHARP)
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+# SHARP-on-MCP
 
-## Commands
+A framework for building independent, pluggable MCP servers that can connect to
+any FHIR or other healthcare data sources.
 
-- `mkdocs new [dir-name]` - Create a new project.
-- `mkdocs serve` - Start the live-reloading docs server.
-- `mkdocs build` - Build the documentation site.
-- `mkdocs -h` - Print help message and exit.
+Let's make LLMs SMART(er) for healthcare.
 
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+**The SMART on FHIR of MCPs**

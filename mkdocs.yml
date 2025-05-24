@@ -1,5 +1,9 @@
-site_name: SHARTP-on-MCP
+site_name: SHARP-on-MCP
 extra_javascript:
   - javascript/readthedocs.js
 theme:
   name: material
+
+nav:
+  - Overview: index.md
+  - Introduction & Vision: intro-vision.md
