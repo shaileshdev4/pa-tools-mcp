@@ -1,0 +1,5 @@
+site_name: SHARTP-on-MCP
+extra_javascript:
+  - javascript/readthedocs.js
+theme:
+  name: material
