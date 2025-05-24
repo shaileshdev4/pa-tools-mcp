@@ -7,6 +7,10 @@ MCP servers and tools may be requested by a member from Darena Solutions or anot
 member of the community. These requests can also have bounties which then get rewarded
 to the developer that successfully merges and implements the requested feature.
 
+## SHARP-on-MCP Specification
+
+- [latest version](https://meldrx-community-mcp.readthedocs.io/en/latest/)
+
 ## Default MCP Server Vs. Creating Your Own
 
 There is a default MCP server in this repoistory for both dotnet and typescript.
