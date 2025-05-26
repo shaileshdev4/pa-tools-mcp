@@ -2,6 +2,7 @@ on:
   push:
     paths:
       - "dotnet/servers/**"
+      - "typescript/servers/**"
 
 env:
   DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
@@ -28,7 +29,7 @@ jobs:
       - name: Run deployer
         working-directory: dotnet/pr-validator/MeldRx.Community.PrValidator/bin/Release/net8.0/linux-x64
         run: |
-          CHANGED_FILES="$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} --diff-filter=A | paste -sd ' ' -)";
+          CHANGED_FILES="$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | paste -sd ' ' -)";
 
           echo "-- Verifying build & docker --";
-          ./pr-validator deploy-mcp-servers -n $CHANGED_FILES;
+          ./pr-validator deploy-mcp-servers -c $CHANGED_FILES;

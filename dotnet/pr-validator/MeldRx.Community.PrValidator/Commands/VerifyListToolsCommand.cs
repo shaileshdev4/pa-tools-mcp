@@ -25,7 +25,12 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
 
     public async Task<bool> HandleAsync(VerifyListToolsCommand command)
     {
-        if (!TryGetProjectDirectories(command, out var projectDirectories))
+        if (
+            !FileUtilities.TryGetProjectDirectories(
+                command.ChangedFiles.ToList(),
+                out var projectDirectories
+            )
+        )
         {
             return false;
         }
@@ -148,125 +153,5 @@ public class VerifyListToolsCommandHandler : ICommandHandler<VerifyListToolsComm
 
         using var imageRemoveProcess = new ProcessHelper("docker", "image rm mcpserver:latest");
         await imageRemoveProcess.RunAsync();
-    }
-
-    private bool TryGetProjectDirectories(
-        VerifyListToolsCommand command,
-        out List<string> projectDirectories
-    )
-    {
-        projectDirectories = [];
-        var directoriesChecked = new HashSet<string>();
-        var rootDirectory = FileUtilities.GetRepoRootDirectory();
-
-        foreach (var file in command.ChangedFiles)
-        {
-            var fi = new FileInfo(Path.Combine(rootDirectory, file));
-            if (fi.Directory is null)
-            {
-                ConsoleUtilities.WriteErrorLine(
-                    $"ERROR: The following file is not contained in a directory: {file}"
-                );
-
-                return false;
-            }
-
-            if (!directoriesChecked.Add(fi.Directory.FullName))
-            {
-                continue;
-            }
-
-            if (
-                !TryFindProjectDirectory(command.Language, fi.Directory, file, out var projectDi)
-                || projectDi is null
-            )
-            {
-                return false;
-            }
-
-            projectDirectories.Add(projectDi.FullName);
-            directoriesChecked.Add(projectDi.FullName);
-        }
-
-        return true;
-    }
-
-    private bool TryFindProjectDirectory(
-        ProgrammingLanguage language,
-        DirectoryInfo di,
-        string startFile,
-        out DirectoryInfo? projectDi
-    )
-    {
-        projectDi = null;
-        while (true)
-        {
-            string? projectFile = null;
-            string? dockerFile = null;
-            foreach (var fi in di.EnumerateFiles())
-            {
-                if (
-                    language == ProgrammingLanguage.Net
-                    && string.Equals(
-                        ".csproj",
-                        fi.Extension,
-                        StringComparison.InvariantCultureIgnoreCase
-                    )
-                )
-                {
-                    projectFile = fi.FullName;
-                }
-
-                if (
-                    language == ProgrammingLanguage.Typescript
-                    && string.Equals(
-                        "package.json",
-                        fi.Name,
-                        StringComparison.InvariantCultureIgnoreCase
-                    )
-                )
-                {
-                    projectFile = fi.FullName;
-                }
-
-                if (
-                    string.Equals(
-                        "dockerfile",
-                        fi.Name,
-                        StringComparison.InvariantCultureIgnoreCase
-                    )
-                )
-                {
-                    dockerFile = fi.FullName;
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(projectFile))
-            {
-                if (di.Parent is null)
-                {
-                    ConsoleUtilities.WriteErrorLine(
-                        $"ERROR: Could not find the project directory for file: {startFile}"
-                    );
-
-                    return false;
-                }
-
-                di = di.Parent;
-                continue;
-            }
-
-            if (string.IsNullOrWhiteSpace(dockerFile))
-            {
-                ConsoleUtilities.WriteErrorLine(
-                    $"ERROR: Could not find docker file in project directory: {di.FullName}"
-                );
-
-                return false;
-            }
-
-            projectDi = di;
-            return true;
-        }
     }
 }

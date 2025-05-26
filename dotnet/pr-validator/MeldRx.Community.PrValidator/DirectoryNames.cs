@@ -11,4 +11,6 @@ public static class DirectoryNames
     public const string AbsoluteTypescriptMcpTools = "typescript/default/tools";
 
     public const string Dotnet = "dotnet";
+
+    public const string Typescript = "typescript";
 }

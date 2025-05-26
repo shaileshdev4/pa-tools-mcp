@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Mime;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,8 +12,8 @@ namespace MeldRx.Community.PrValidator.Commands;
 [Verb("deploy-mcp-servers", HelpText = "Deploys new MCP servers using dokploy.")]
 public class DeployMcpServersCommand : ICommand
 {
-    [Option('n', "new-files", HelpText = "A list of files that have been newly created")]
-    public IEnumerable<string> NewFiles { get; set; } = [];
+    [Option('c', "changed-files", HelpText = "A list of files that were changed")]
+    public IEnumerable<string> ChangedFiles { get; set; } = [];
 }
 
 public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCommand>
@@ -32,43 +33,71 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
 
     public async Task<bool> HandleAsync(DeployMcpServersCommand command)
     {
-        var newFiles = command
-            .NewFiles.Where(x => x.EndsWith(".csproj", StringComparison.InvariantCultureIgnoreCase))
-            .ToList();
-
-        if (newFiles.Count == 0)
+        var changedFiles = command.ChangedFiles.ToList();
+        if (changedFiles.Count == 0)
         {
+            Console.WriteLine("No files were changed. Skipping.");
             return true;
         }
 
-        foreach (var file in newFiles)
+        if (!FileUtilities.TryGetProjectDirectories(changedFiles, out var projectDirectories))
         {
-            var fi = new FileInfo(file);
-            var directoryName =
-                Path.GetDirectoryName(file)
-                ?? throw new InvalidOperationException(
-                    $"Could not determine directory of file: {file}"
-                );
+            return false;
+        }
 
-            var projectName = fi.Name.Replace(fi.Extension, string.Empty);
-            var (name, longName) = GetNamesOfProject(projectName);
+        if (projectDirectories.Count == 0)
+        {
+            Console.WriteLine("No project directories were found. Skipping.");
+            return true;
+        }
 
-            var createAppResponse = await CreateApplicationAsync(name, longName);
-            await SaveGitDetailsAsync(createAppResponse.ApplicationId, directoryName);
-            await SaveDockerDetailsAsync(createAppResponse.ApplicationId, directoryName);
-            await CreateDomainAsync(createAppResponse.ApplicationId, name);
+        var projectId = GetEnvVarOrThrow("DOKPLOY_PROJECT_ID");
+        foreach (var directory in projectDirectories)
+        {
+            var language = directory.Contains(
+                $"{DirectoryNames.Dotnet}{Path.DirectorySeparatorChar}"
+            )
+                ? ProgrammingLanguage.Net
+                : ProgrammingLanguage.Typescript;
+
+            var (name, longName) = GetNamesOfProject(directory);
+            var applicationId = await GetApplicationIdIfExistsOrNullAsync(name, projectId);
+
+            if (string.IsNullOrWhiteSpace(applicationId))
+            {
+                var createAppResponse = await CreateApplicationAsync(name, longName, projectId);
+                await SaveGitDetailsAsync(language, createAppResponse.ApplicationId, directory);
+                await SaveDockerDetailsAsync(language, createAppResponse.ApplicationId, directory);
+                await CreateDomainAsync(createAppResponse.ApplicationId, name);
+                await DeployApplicationAsync(createAppResponse.ApplicationId, isNew: true);
+            }
+            else
+            {
+                await DeployApplicationAsync(applicationId, isNew: false);
+            }
         }
 
         return true;
     }
 
+    private async Task<string?> GetApplicationIdIfExistsOrNullAsync(string name, string projectId)
+    {
+        var response = await SendRequestAsync<object, GetProjectResponse>(
+            HttpMethod.Get,
+            $"project.one?projectId={projectId}"
+        );
+
+        var existing = response.Applications.FirstOrDefault(x => x.Name == name);
+        return existing?.ApplicationId;
+    }
+
     private async Task<CreateApplicationResponse> CreateApplicationAsync(
         string name,
-        string longName
+        string longName,
+        string projectId
     )
     {
         Console.WriteLine($"Creating application for: {name}");
-        var projectId = GetEnvVarOrThrow("DOKPLOY_PROJECT_ID");
         var serverId = GetEnvVarOrThrow("DOKPLOY_SERVER_ID");
 
         var request = new CreateApplicationRequest
@@ -86,7 +115,11 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
         );
     }
 
-    private async Task SaveGitDetailsAsync(string applicationId, string directoryName)
+    private async Task SaveGitDetailsAsync(
+        ProgrammingLanguage language,
+        string applicationId,
+        string directoryName
+    )
     {
         Console.WriteLine($"Updating GIT details for: {directoryName}");
         var githubUrl = GetEnvVarOrThrow("DOKPLOY_GITHUB_URL");
@@ -95,7 +128,10 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
             ApplicationId = applicationId,
             CustomGitUrl = githubUrl,
             CustomGitBranch = "main",
-            CustomGitBuildPath = $"/{DirectoryNames.Dotnet}",
+            CustomGitBuildPath =
+                language == ProgrammingLanguage.Net
+                    ? $"/{DirectoryNames.Dotnet}"
+                    : $"/{DirectoryNames.Typescript}",
             WatchPaths = [$"{directoryName}/**"],
         };
 
@@ -106,14 +142,23 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
         );
     }
 
-    private async Task SaveDockerDetailsAsync(string applicationId, string directoryName)
+    private async Task SaveDockerDetailsAsync(
+        ProgrammingLanguage language,
+        string applicationId,
+        string directoryName
+    )
     {
         Console.WriteLine($"Updating docker details for: {directoryName}");
+
+        directoryName =
+            language == ProgrammingLanguage.Net
+                ? directoryName.Replace($"{DirectoryNames.Dotnet}/", string.Empty)
+                : directoryName.Replace($"{DirectoryNames.Typescript}/", string.Empty);
+
         var saveBuildTypeRequest = new SaveBuildTypeRequest
         {
             ApplicationId = applicationId,
-            Dockerfile =
-                $"{directoryName.Replace($"{DirectoryNames.Dotnet}/", string.Empty)}/Dockerfile",
+            Dockerfile = $"{directoryName}/Dockerfile",
         };
 
         await SendRequestAsync(HttpMethod.Post, "application.saveBuildType", saveBuildTypeRequest);
@@ -121,17 +166,33 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
 
     private async Task CreateDomainAsync(string applicationId, string name)
     {
-        Console.WriteLine($"Creating domain for: {name}");
+        var randomizedName =
+            $"{name}{RandomNumberGenerator.GetString("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)}";
+
+        Console.WriteLine($"Creating domain for: {randomizedName}");
         var subdomain = GetEnvVarOrThrow("DOKPLOY_SUBDOMAIN");
         var createDomainRequest = new CreateDomainRequest
         {
             ApplicationId = applicationId,
-            Host = $"https://{name}.{subdomain}",
+            Host = $"https://{randomizedName}.{subdomain}",
             Port = 5000,
             Https = true,
         };
 
+        Console.WriteLine($"Successfully created domain: {randomizedName}");
         await SendRequestAsync(HttpMethod.Post, "domain.create", createDomainRequest);
+    }
+
+    private async Task DeployApplicationAsync(string applicationId, bool isNew)
+    {
+        var url = isNew ? "application.deploy" : "application.redeploy";
+        var response = await SendRequestAsync(
+            HttpMethod.Post,
+            url,
+            new DeployApplicationRequest { ApplicationId = applicationId }
+        );
+
+        response.EnsureSuccessStatusCode();
     }
 
     private async Task<HttpResponseMessage> SendRequestAsync<T>(
@@ -169,9 +230,15 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
             );
     }
 
-    private (string name, string longName) GetNamesOfProject(string projectName)
+    private (string name, string longName) GetNamesOfProject(string directory)
     {
-        var identifier = projectName[(projectName.LastIndexOf('.') + 1)..];
+        var directoryIndex = directory.LastIndexOf('.');
+        if (directoryIndex < 0)
+        {
+            directoryIndex = directory.LastIndexOf(Path.DirectorySeparatorChar);
+        }
+
+        var identifier = directory[(directoryIndex + 1)..];
         var kebabCaseBuilder = new StringBuilder();
         for (var i = 0; i < identifier.Length; i++)
         {
