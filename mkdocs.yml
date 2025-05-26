@@ -21,6 +21,5 @@ nav:
   - Specification:
       - Terminology: terminology.md
       - 3 Key Components: key-components.md
-  - Contributing:
-      - Getting Started: getting-started.md
-      - Contributing and Bounty Program: ask-collaborators.md
+  - Getting Started: getting-started.md
+  - Contributing and Bounty Program: ask-collaborators.md
