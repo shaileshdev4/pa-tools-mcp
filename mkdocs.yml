@@ -19,7 +19,9 @@ nav:
   - Introduction & Vision: intro-vision.md
   - The Problem We're Solving: problem.md
   - SHARP on MCP: sharp-on-mcp.md
-  - Terminology: terminology.md
-  - 3 Key Components: key-components.md
-  - Getting Started: getting-started.md
-  - "Our Ask: Call for Collaborators": ask-collaborators.md
+  - Specification:
+      - Terminology: terminology.md
+      - Key Components: key-components.md
+  - Contributing:
+      - Getting Started: getting-started.md
+      - "Our Ask: Call for Collaborators": ask-collaborators.md

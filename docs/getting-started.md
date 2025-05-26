@@ -1,13 +1,16 @@
 # Getting Started (TODO: Add Links)
 
+Use our [community repo](https://github.com/darena-solutions/meldrx-community-mcp)
+to contribute.
+
 To kickstart this initiative, we’ve already made the following tools available:
 
 ## MCP Server Templates
 
 Ready to build your own MCP server with the specifications
 
--   .NET
--   TypeScript (Node.js)
+-   [.NET](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/dotnet/servers)
+-   [TypeScript (Node.js)](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/typescript/servers)
 -   Python _(Coming soon)_
 -   Other _(Coming soon)_
 
@@ -23,8 +26,8 @@ Each template provides:
 Projects that have some tools added and will continue to evolve with newer tools.
 See the next section.
 
--   .NET
--   Typescript
+-   [.NET](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/dotnet/default)
+-   [Typescript](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/typescript/default)
 -   Others
 
 ## Hosted Version of MCP Server Ready to Test

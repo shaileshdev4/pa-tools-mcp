@@ -17,10 +17,8 @@ to connect:
 
 -   **OAuth Client Credentials:** The MCP server supports authenticating the client
     using the [client credentials grant](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-12#name-client-credentials-grant).
-    Refer to the “Client Credentials Flow” section to learn more.
 
     -   Clients may register with the MCP authorization server using dynamic registration.
-        Refer to the "Dynamic Registration for Client Credentials" to learn more.
 
 -   **API-key based access:** LLM apps authenticate with MCP servers via API keys.
 
