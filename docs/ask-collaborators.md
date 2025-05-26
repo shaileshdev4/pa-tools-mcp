@@ -4,13 +4,13 @@ The SHARP-on-MCP initiative will thrive on community collaboration. We believe t
 
 We actively invite developers, healthcare professionals, researchers, and AI enthusiasts to contribute. Your expertise can help shape the future of AI agent interoperability in healthcare. We've structured two primary avenues for contribution, designed to allow for flexible engagement:
 
-1. **Enhancing the Core FHIR-Based Reference MCP Server**
+- **Enhancing the Core FHIR-Based Reference MCP Server**
 
 We are building and maintaining a centralized, open-source reference MCP server specifically designed to interface with FHIR data. This server aims to become a comprehensive repository of common, reusable tools for healthcare AI agents.
 
 If your goal is to contribute broadly applicable functionalities that leverage FHIR resources, you can develop and submit new tools or enhance existing ones for this reference server. Contributions here directly enrich a shared, foundational resource that will benefit the entire SHARP-on-MCP ecosystem.
 
-2. **Developing Independent MCP Servers**
+- **Developing Independent MCP Servers**
 
 Alternatively, you can contribute by developing and showcasing your own specialized MCP servers. Whether you're building a unique service that leverages FHIR data in novel ways, integrating with other healthcare data sources, or exploring entirely new use cases for AI agents, SHARP-on-MCP provides the framework for your independent creations. We encourage the sharing of these innovative servers with the community.
 
