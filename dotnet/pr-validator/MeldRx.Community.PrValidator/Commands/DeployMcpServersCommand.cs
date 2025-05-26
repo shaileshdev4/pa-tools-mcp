@@ -54,20 +54,35 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
         var projectId = GetEnvVarOrThrow("DOKPLOY_PROJECT_ID");
         foreach (var directory in projectDirectories)
         {
-            var language = directory.Contains(
+            var relativeDirectory = directory.Replace(
+                $"{FileUtilities.GetRepoRootDirectory()}{Path.DirectorySeparatorChar}",
+                string.Empty
+            );
+
+            var language = relativeDirectory.StartsWith(
                 $"{DirectoryNames.Dotnet}{Path.DirectorySeparatorChar}"
             )
                 ? ProgrammingLanguage.Net
                 : ProgrammingLanguage.Typescript;
 
-            var (name, longName) = GetNamesOfProject(directory);
+            var (name, longName) = GetNamesOfProject(relativeDirectory);
             var applicationId = await GetApplicationIdIfExistsOrNullAsync(name, projectId);
 
             if (string.IsNullOrWhiteSpace(applicationId))
             {
                 var createAppResponse = await CreateApplicationAsync(name, longName, projectId);
-                await SaveGitDetailsAsync(language, createAppResponse.ApplicationId, directory);
-                await SaveDockerDetailsAsync(language, createAppResponse.ApplicationId, directory);
+                await SaveGitDetailsAsync(
+                    language,
+                    createAppResponse.ApplicationId,
+                    relativeDirectory
+                );
+
+                await SaveDockerDetailsAsync(
+                    language,
+                    createAppResponse.ApplicationId,
+                    relativeDirectory
+                );
+
                 await CreateDomainAsync(createAppResponse.ApplicationId, name);
                 await DeployApplicationAsync(createAppResponse.ApplicationId, isNew: true);
             }
@@ -150,15 +165,25 @@ public class DeployMcpServersCommandHandler : ICommandHandler<DeployMcpServersCo
     {
         Console.WriteLine($"Updating docker details for: {directoryName}");
 
-        directoryName =
+        var dockerDirectory =
             language == ProgrammingLanguage.Net
-                ? directoryName.Replace($"{DirectoryNames.Dotnet}/", string.Empty)
-                : directoryName.Replace($"{DirectoryNames.Typescript}/", string.Empty);
+                ? directoryName.Replace(
+                    $"{DirectoryNames.Dotnet}{Path.DirectorySeparatorChar}",
+                    string.Empty
+                )
+                : directoryName.Replace(
+                    $"{DirectoryNames.Typescript}{Path.DirectorySeparatorChar}",
+                    string.Empty
+                );
 
         var saveBuildTypeRequest = new SaveBuildTypeRequest
         {
             ApplicationId = applicationId,
-            Dockerfile = $"{directoryName}/Dockerfile",
+            Dockerfile = $"{dockerDirectory}/Dockerfile",
+            DockerContextPath =
+                language == ProgrammingLanguage.Net
+                    ? $"/{DirectoryNames.Dotnet}"
+                    : $"/{DirectoryNames.Typescript}",
         };
 
         await SendRequestAsync(HttpMethod.Post, "application.saveBuildType", saveBuildTypeRequest);
