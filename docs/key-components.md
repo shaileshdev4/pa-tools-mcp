@@ -1,6 +1,6 @@
 # 3 Key Components of SHARP on MCP
 
-## MCP Server Authentication
+## 1. MCP Server Authentication
 
 The SHARP on MCP specification defines multiple authentication models that MCP servers
 may implement to support both open innovation and enterprise use cases. These mechanisms
@@ -34,7 +34,7 @@ Whether enabling **open-access public MCP servers** or supporting **enterprise-g
 monetization and contractual control**, SHARP on MCP provides a standards-based
 foundation for interoperable, agent-ready services.
 
-## Context Passing (The "Hooks" Layer)
+## 2.Context Passing (The "Hooks" Layer)
 
 In SMART on FHIR, there are two main ways to authenticate. In the standalone and
 EHR launch, users authenticate in-session. For backend flows, the client is authenticated
@@ -69,7 +69,7 @@ It determines the **scope of permissions** granted to the MCP server. The agent
 it to the MCP server as part of the request, mirroring the **authorization model
 used in CDS Hooks**.
 
-## FHIR Context Discovery
+## 3. FHIR Context Discovery
 
 MCP servers will have a mechanism to advertise to agents the level of access they
 require. The FHIR-based MCP server will share the scopes of the tools that need
