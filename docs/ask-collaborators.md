@@ -21,9 +21,9 @@ To further incentivize high-quality contributions and accelerate feature develop
 **How the Bounty Program Works:**
 
 - **Issue Submission**: Anyone can propose new features, enhancements, or critical bug fixes by submitting a detailed issue to our community repository. An issue should clearly describe:
-   - A proposed feature for the main FHIR-based MCP server (e.g., "Add tool for patient risk stratification").
-   - A completely new use case or type of MCP server that would benefit the SHARP ecosystem (e.g., "Propose an MCP server for clinical trial matching").
-   - A clearly defined problem or improvement.
+     - A proposed feature for the main FHIR-based MCP server (e.g., "Add tool for patient risk stratification").
+     - A completely new use case or type of MCP server that would benefit the SHARP ecosystem (e.g., "Propose an MCP server for clinical trial matching").
+     - A clearly defined problem or improvement.
   
 - **Issue Review and Bounty Issuance**: Our core team, in collaboration with community members, will review submitted issues on an ongoing basis. Issues that are well-defined, strategically aligned with SHARP-on-MCP's vision, and demonstrate significant value will be designated with a bounty.
   
