@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/darena-solutions/meldrx-samplemcp-typescript.git"
+    "url": "git+https://github.com/darena-solutions/darena-health-samplemcp-typescript.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/darena-solutions/meldrx-samplemcp-typescript/issues"
+    "url": "https://github.com/darena-solutions/darena-health-samplemcp-typescript/issues"
   },
-  "homepage": "https://github.com/darena-solutions/meldrx-samplemcp-typescript#readme",
+  "homepage": "https://github.com/darena-solutions/darena-health-samplemcp-typescript#readme",
   "description": "",
   "devDependencies": {
     "@types/express": "^5.0.2",

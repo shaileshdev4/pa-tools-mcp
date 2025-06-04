@@ -7,7 +7,7 @@ _Provide a brief description of the PR_
 - [ ] Not applicable. This PR is regarding MCP tools
 - [ ] I have created a directory that contains my servers
 - [ ] Each of my servers are their own c#/typescript project
-- [ ] If dotnet, each of my project names start with `MeldRx.Community.McpServers.{Your Identifier}.`
+- [ ] If dotnet, each of my project names start with `DarenaHealth.Community.McpServers.{Your Identifier}.`
       If typescript, each of my directory names are alphanumeric with dashes
 - [ ] Each of my servers have the option of connecting to it openly to verify tools
       can be listed

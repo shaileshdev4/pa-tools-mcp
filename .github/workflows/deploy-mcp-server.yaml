@@ -24,12 +24,12 @@ jobs:
           fetch-depth: 0
 
       - name: Build pr-validator
-        working-directory: dotnet/pr-validator/MeldRx.Community.PrValidator
+        working-directory: dotnet/pr-validator/DarenaHealth.Community.PrValidator
         run: |
           dotnet publish -c Release -r linux-x64
 
       - name: Run deployer
-        working-directory: dotnet/pr-validator/MeldRx.Community.PrValidator/bin/Release/net8.0/linux-x64
+        working-directory: dotnet/pr-validator/DarenaHealth.Community.PrValidator/bin/Release/net8.0/linux-x64
         run: |
           CHANGED_FILES="$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | paste -sd ' ' -)";
 

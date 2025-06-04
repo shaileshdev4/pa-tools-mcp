@@ -4,14 +4,14 @@
 
 You can contribute open source MCP servers in this directory. These servers will
 then be available for developers to use and be available as a pluggable MCP server
-in the MeldRx ecosystem.
+in the DarenaHealth ecosystem.
 
 ## Helpful Links
 
 - [MCP Specification](https://modelcontextprotocol.io/specification/2025-03-26)
 - [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
-- [Example Dockerfile](darena-solutions/MeldRx.Community.McpServers.DarenaSolutions.FhirCrud/Dockerfile)
-- [Example MCP Server](darena-solutions/MeldRx.Community.McpServers.DarenaSolutions.FhirCrud)
+- [Example Dockerfile](darena-solutions/DarenaHealth.Community.McpServers.DarenaSolutions.FhirCrud/Dockerfile)
+- [Example MCP Server](darena-solutions/DarenaHealth.Community.McpServers.DarenaSolutions.FhirCrud)
 - [CSharpier Formatter](https://csharpier.com/)
 - [CSharpier IDE Setup](https://csharpier.com/docs/Editors)
 
@@ -22,8 +22,8 @@ in the MeldRx ecosystem.
 - Create a new solution with a project in that directory. There should only be one
   solution which contains multiple projects, each project representing a different
   MCP server you build.
-- Each project name must begin with `MeldRx.Community.McpServers.{Your Identifier}.`.
-  For example: `MeldRx.Community.McpTools.DarenaSolutions.`.
+- Each project name must begin with `DarenaHealth.Community.McpServers.{Your Identifier}.`.
+  For example: `DarenaHealth.Community.McpTools.DarenaSolutions.`.
 - Ensure that you have a `GET /hello-world` endpoint. This will be used to verify
   connectivity to your MCP server. The endpoint should return a 2xx successful code.
 
@@ -33,7 +33,7 @@ You are free to create the MCP server as you see fit. We also provide a core pro
 that can provide some utilities and helpers that can help get you started.
 
 To add the core project, in your solution, add an existing project, and add the
-existing core project located in `../core/MeldRx.Community.Mcp.Core/MeldRx.Community.Mcp.Core.csproj`.
+existing core project located in `../core/DarenaHealth.Community.Mcp.Core/DarenaHealth.Community.Mcp.Core.csproj`.
 You can then reference this project with any of your server projects.
 
 ### Dockerfile
@@ -53,7 +53,7 @@ We will then run it with:
 Ensure the Dockerfile can build your project and have the project run on port `5000`
 inside the container.
 
-- [Example Dockerfile](darena-solutions/MeldRx.Community.McpServers.DarenaSolutions.FhirCrud/Dockerfile)
+- [Example Dockerfile](darena-solutions/DarenaHealth.Community.McpServers.DarenaSolutions.FhirCrud/Dockerfile)
 
 ### MCP Server Verification
 
@@ -92,7 +92,7 @@ A DarenaSolutions maintainer will review your PR. Once any comments or changes h
 been resolved and the PR has been approved, you may merge your changes.
 
 The merge will trigger an action that will make your server available as a pluggable
-MCP server in the MeldRx ecosystem.
+MCP server in the DarenaHealth ecosystem.
 
 ## Example Project
 

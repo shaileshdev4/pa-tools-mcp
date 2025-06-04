@@ -9,15 +9,15 @@ to the developer that successfully merges and implements the requested feature.
 
 ## SHARP-on-MCP Specification
 
-- [latest version](https://meldrx-community-mcp.readthedocs.io/en/latest/)
+- [latest version](https://www.sharponmcp.com/)
 
 ## Default MCP Server Vs. Creating Your Own
 
 There is a default MCP server in this repoistory for both dotnet and typescript.
-These MCP servers are available in the MeldRx workspace ecosystem. Contributors
+These MCP servers are available in the DarenaHealth workspace ecosystem. Contributors
 can only contribute additional tools to this MCP server but cannot make any modifications
 outside of tools at this time. The default servers will be reviewed more critically
-as it is included in a key part of our MeldRx product.
+as it is included in a key part of our product.
 
 Contributors can also create their own MCP servers. Restrictions are more lax using
 this option as developers are allowed to build their MCP server using any package

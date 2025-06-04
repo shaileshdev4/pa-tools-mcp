@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/darena-solutions/meldrx-community-mcp.git"
+    "url": "git+https://github.com/darena-solutions/darena-health-community-mcp.git"
   },
   "author": "Darena Solutions",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/darena-solutions/meldrx-community-mcp/issues"
+    "url": "https://github.com/darena-solutions/darena-health-community-mcp/issues"
   },
-  "homepage": "https://github.com/darena-solutions/meldrx-community-mcp#readme",
+  "homepage": "https://github.com/darena-solutions/darena-health-community-mcp#readme",
   "devDependencies": {
     "@types/express": "^5.0.2",
     "prettier": "^3.5.3",

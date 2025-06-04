@@ -3,7 +3,7 @@
 ## Overview
 
 You can contribute to the default dotnet MCP server in this directory. Contribution
-is limited to creating tools in the `/MeldRx.Community.McpTools` project and modifications
+is limited to creating tools in the `/DarenaHealth.Community.McpTools` project and modifications
 outside of this project are not allowed.
 
 If you require more control over your MCP server with your own nuget packages and
@@ -12,16 +12,16 @@ of contributing to the default MCP server.
 
 ## Restrictions
 
-- In the `/MeldRx.Community.McpTools` project, create a directory that represents
-  you as an individual or an organization. For example `/MeldRx.Community.McpTools/DarenaSolutions`.
+- In the `/DarenaHealth.Community.McpTools` project, create a directory that represents
+  you as an individual or an organization. For example `/DarenaHealth.Community.McpTools/DarenaSolutions`.
   - Follow c# conventions and ensure this directory is pascal-cased.
 - Add your tools and any additional code that your tool requires to run.
 - All MCP tools in the directory must implement the `IMcpTool` interface located
-  in `MeldRx.Community.Mcp.Core`.
+  in `DarenaHealth.Community.Mcp.Core`.
 
 ### Registering MCP Tools
 
-After you have created your tools, you will need to update the top level `/MeldRx.Community.McpTools/ServiceCollectionExtensions.cs` file so that the tool can be registered.
+After you have created your tools, you will need to update the top level `/DarenaHealth.Community.McpTools/ServiceCollectionExtensions.cs` file so that the tool can be registered.
 
 In the file, create a new private extension method. This method must begin with
 `Add` and end with `McpTool` or `McpTools`. This method should register all your
@@ -59,7 +59,7 @@ up in your IDE and ensure your code is formatted before creating a PR.
 
 ### Package Dependencies
 
-You are limited to the packages listed in `/MeldRx.Community.McpTools//MeldRx.Community.McpTools.csproj`
+You are limited to the packages listed in `/DarenaHealth.Community.McpTools//DarenaHealth.Community.McpTools.csproj`
 and you cannot install additional packages. If you require an additional package
 that is not listed there, contact us and we will review the package and make a determination.
 

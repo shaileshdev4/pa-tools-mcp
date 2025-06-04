@@ -1,6 +1,6 @@
 # Getting Started
 
-Engaging with the SHARP-on-MCP initiative and contributing to its development is straightforward. We encourage community contributions via our [community repo](https://github.com/darena-solutions/meldrx-community-mcp). 
+Engaging with the SHARP-on-MCP initiative and contributing to its development is straightforward. We encourage community contributions via our [community repo](https://github.com/darena-solutions/darena-health-community-mcp).
 
 To facilitate rapid development and adoption, the following foundational tools and resources are currently available:
 
@@ -8,8 +8,8 @@ To facilitate rapid development and adoption, the following foundational tools a
 
 Ready to build your own MCP server with the specifications
 
--   [.NET](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/dotnet/servers)
--   [TypeScript (Node.js)](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/typescript/servers)
+-   [.NET](https://github.com/darena-solutions/darena-health-community-mcp/tree/main/dotnet/servers)
+-   [TypeScript (Node.js)](https://github.com/darena-solutions/darena-health-community-mcp/tree/main/typescript/servers)
 -   Other languages and frameworks to be determined _(TBD)_
 
 Each template provides:
@@ -21,11 +21,10 @@ Each template provides:
 
 ## Default MCP Server Implementations (with Integrated Tools)
 
-We provide ready-to-deploy, open-source MCP server implementations that incorporate a set of default tools for common healthcare scenarios, primarily leveraging FHIR. These projects are actively evolving with the continuous addition of new tools. 
+We provide ready-to-deploy, open-source MCP server implementations that incorporate a set of default tools for common healthcare scenarios, primarily leveraging FHIR. These projects are actively evolving with the continuous addition of new tools.
 
--   [.NET](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/dotnet/default)
--   [Typescript](https://github.com/darena-solutions/meldrx-community-mcp/tree/main/typescript/default)
-
+-   [.NET](https://github.com/darena-solutions/darena-health-community-mcp/tree/main/dotnet/default)
+-   [Typescript](https://github.com/darena-solutions/darena-health-community-mcp/tree/main/typescript/default)
 
 ## Hosted MCP Server Instances for Testing
 
@@ -38,12 +37,12 @@ For immediate testing and experimentation, public-facing instances of SHARP-on-M
 
 To facilitate robust development, a comprehensive testing harness and live sandbox environment have been established. This suite allows developers to validate their MCP server implementations against the SHARP-on-MCP specification and against real-world healthcare data.
 
-*More details on each coming soon*
+_More details on each coming soon_
 
-- MeldRx Standalone: A dedicated environment for testing specific SHARP-on-MCP interactions.
-- External EHR Sandbox FHIR Servers: Integration with industry-standard sandbox environments (e.g., Epic sandbox) to simulate realistic clinical data interactions.
-- Sample Tools: A collection of example tools for testing various MCP functionalities.
-- Postman Collection: A pre-configured Postman collection is provided to simplify API testing and interaction with SHARP-on-MCP servers.
+-   DarenaHealth Standalone: A dedicated environment for testing specific SHARP-on-MCP interactions.
+-   External EHR Sandbox FHIR Servers: Integration with industry-standard sandbox environments (e.g., Epic sandbox) to simulate realistic clinical data interactions.
+-   Sample Tools: A collection of example tools for testing various MCP functionalities.
+-   Postman Collection: A pre-configured Postman collection is provided to simplify API testing and interaction with SHARP-on-MCP servers.
 
 ## Video Tutorials and Demonstrations
 

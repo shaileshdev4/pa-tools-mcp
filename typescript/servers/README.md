@@ -4,7 +4,7 @@
 
 You can contribute open source MCP servers in this directory. These servers will
 then be available for developers to use and be available as a pluggable MCP server
-in the MeldRx ecosystem.
+in the DarenaHealth ecosystem.
 
 ## Helpful Links
 
@@ -82,7 +82,7 @@ A DarenaSolutions maintainer will review your PR. Once any comments or changes h
 been resolved and the PR has been approved, you may merge your changes.
 
 The merge will trigger an action that will make your server available as a pluggable
-MCP server in the MeldRx ecosystem.
+MCP server in the DarenaHealth ecosystem.
 
 ## Example Project
 
