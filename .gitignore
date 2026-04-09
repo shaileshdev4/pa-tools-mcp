@@ -1,3 +1,7 @@
 .idea
 __pycache__/
 *.pyc
+
+# Secrets — never commit API keys or local env
+**/.env
+.env
