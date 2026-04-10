@@ -28,6 +28,7 @@ async def generate_clinical_justification(
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+    anthropic_model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-5")
 
     try:
         patient = json.loads(patient_data)
@@ -56,7 +57,7 @@ Keep it under 500 words but make every word count."""
     client = anthropic.Anthropic(api_key=api_key)
 
     message = client.messages.create(
-        model="claude-opus-4-5",
+        model=anthropic_model,
         max_tokens=1024,
         messages=[
             {"role": "user", "content": prompt}
