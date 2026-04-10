@@ -5,7 +5,7 @@ from tools.get_patient_data_tool import get_patient_data
 from tools.check_coverage_tool import check_coverage_requirements
 from tools.match_clinical_trials_tool import match_clinical_trials
 from tools.generate_justification_tool import generate_clinical_justification
-from tools.generate_appeal_letter import generate_appeal_letter
+from tools.generate_appeal_tool import generate_appeal_letter
 
 mcp = FastMCP("PA Tools MCP", stateless_http=True, host="0.0.0.0")
 
