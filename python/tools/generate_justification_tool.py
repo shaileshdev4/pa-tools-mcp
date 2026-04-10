@@ -4,7 +4,7 @@ from mcp.server.fastmcp import Context
 from pydantic import Field
 from fhir_utilities import get_patient_id_if_context_exists
 from mcp_utilities import create_text_response
-import anthropic
+import google.generativeai as genai
 import json
 
 async def generate_clinical_justification(
@@ -25,10 +25,10 @@ async def generate_clinical_justification(
     if not patientId:
         patientId = get_patient_id_if_context_exists(ctx)
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY environment variable not set")
-    anthropic_model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-5")
+        raise ValueError("GOOGLE_API_KEY environment variable not set")
+    genai.configure(api_key=api_key)
 
     try:
         patient = json.loads(patient_data)
@@ -54,23 +54,15 @@ Format as a professional medical letter. Be specific, cite the patient's actual 
 Do not use placeholder text. Write as if this will be submitted to an insurance payer today.
 Keep it under 500 words but make every word count."""
 
-    client = anthropic.Anthropic(api_key=api_key)
-
-    message = client.messages.create(
-        model=anthropic_model,
-        max_tokens=1024,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    justification = message.content[0].text
+    model_client = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
+    response = model_client.generate_content(prompt)
+    justification = response.text
 
     result = {
         "patient_id": patientId,
         "procedure": procedure,
         "justification_letter": justification,
-        "generated_by": "Claude (Anthropic)",
+        "generated_by": "Gemini (Google)",
         "ready_for_submission": True,
     }
 
