@@ -5,6 +5,92 @@ from fhir_utilities import get_patient_id_if_context_exists
 from mcp_utilities import create_text_response
 import json
 
+PAYER_PROFILES = {
+    "aetna": {
+        "name": "Aetna",
+        "urgent_hours": 72,
+        "standard_days": 7,
+        "step_therapy_required": True,
+        "step_therapy_min_duration_months": 3,
+        "prior_auth_validity_days": 365,
+        "appeals_timeframe_days": 60,
+        "portal": "Aetna NaviMedix",
+        "known_denial_patterns": [
+            "Step therapy not completed per Aetna Clinical Policy Bulletin",
+            "Missing peer-to-peer review request within 24 hours",
+            "Lab results older than 30 days",
+        ],
+        "notes": "Aetna requires peer-to-peer within 24hrs of urgent denial. NaviMedix portal preferred.",
+    },
+    "unitedhealth": {
+        "name": "UnitedHealthcare",
+        "urgent_hours": 72,
+        "standard_days": 5,
+        "step_therapy_required": True,
+        "step_therapy_min_duration_months": 3,
+        "prior_auth_validity_days": 180,
+        "appeals_timeframe_days": 30,
+        "portal": "UHC Provider Portal / Optum",
+        "known_denial_patterns": [
+            "Clinical criteria not met per UHC medical policy",
+            "Missing medical records with submission",
+            "PA expired — 180-day limit",
+            "Off-formulary without exception form",
+        ],
+        "notes": "UHC PA valid only 180 days. Shorter than CMS minimum. Reauthorization required.",
+    },
+    "bcbs": {
+        "name": "Blue Cross Blue Shield",
+        "urgent_hours": 72,
+        "standard_days": 7,
+        "step_therapy_required": True,
+        "step_therapy_min_duration_months": 6,
+        "prior_auth_validity_days": 365,
+        "appeals_timeframe_days": 60,
+        "portal": "Availity",
+        "known_denial_patterns": [
+            "Step therapy minimum 6 months not met (BCBS policy)",
+            "Specialty pharmacy not used",
+            "Missing specialty pharmacy enrollment form",
+        ],
+        "notes": "BCBS requires 6-month step therapy minimum — stricter than competitors. Specialty pharmacy mandate.",
+    },
+    "cigna": {
+        "name": "Cigna",
+        "urgent_hours": 24,
+        "standard_days": 3,
+        "step_therapy_required": True,
+        "step_therapy_min_duration_months": 3,
+        "prior_auth_validity_days": 365,
+        "appeals_timeframe_days": 60,
+        "portal": "Cigna for Health Care Professionals",
+        "known_denial_patterns": [
+            "Cigna drug list exclusion — biosimilar preferred",
+            "Missing Cigna-specific PA form",
+            "Diagnosis not matching Cigna coverage criteria",
+        ],
+        "notes": "Cigna is fastest — 24hr urgent, 3-day standard. Often requires biosimilar first.",
+    },
+    "medicare": {
+        "name": "Medicare Advantage",
+        "urgent_hours": 72,
+        "standard_days": 7,
+        "step_therapy_required": False,
+        "step_therapy_min_duration_months": 0,
+        "prior_auth_validity_days": 365,
+        "appeals_timeframe_days": 60,
+        "portal": "CMS FHIR PA API (2027)",
+        "known_denial_patterns": [
+            "Not medically necessary per Medicare LCD/NCD",
+            "Missing ABN (Advance Beneficiary Notice)",
+            "Service not covered under Part B/D",
+        ],
+        "notes": "CMS-0057-F mandates FHIR PA API by Jan 2027. 82% of Medicare Advantage appeals overturned.",
+    },
+}
+
+DEFAULT_PAYER = PAYER_PROFILES["medicare"]
+
 # CMS-0057-F compliant coverage rules
 # Structured as CDS Hooks-style decision support cards
 PROCEDURE_RULES = {
@@ -230,6 +316,10 @@ async def check_coverage_requirements(
         str | None,
         Field(description="Patient ID. Optional if patient context exists."),
     ] = None,
+    payer: Annotated[
+        str | None,
+        Field(description="Insurance payer name. E.g. 'Aetna', 'UnitedHealth', 'BCBS', 'Cigna', 'Medicare'. Defaults to generic CMS rules if not specified."),
+    ] = None,
     ctx: Context = None,
 ) -> str:
     if not patientId:
@@ -247,6 +337,15 @@ async def check_coverage_requirements(
     if not matched_rule:
         matched_rule = DEFAULT_RULE.copy()
         matched_rule["procedure_name"] = procedure
+    
+    # Resolve payer profile
+    payer_profile = DEFAULT_PAYER
+    if payer:
+        payer_lower = payer.lower().replace(" ", "").replace("-", "")
+        for key, profile in PAYER_PROFILES.items():
+            if key in payer_lower or payer_lower in key:
+                payer_profile = profile
+                break
 
     confidence = _compute_confidence_score(procedure_lower, matched_rule)
 
@@ -262,9 +361,19 @@ async def check_coverage_requirements(
         "cms_compliance": {
             "mandate": "CMS-0057-F (Interoperability and Prior Authorization Final Rule)",
             "effective_date": "January 1, 2026",
-            "urgent_decision_hours": 72,
-            "standard_decision_days": 7,
             "appeal_rights": "Patient has right to expedited appeal within 72 hours of denial",
+        },
+        "payer_specific_rules": {
+            "payer": payer_profile["name"],
+            "urgent_decision_hours": payer_profile["urgent_hours"],
+            "standard_decision_days": payer_profile["standard_days"],
+            "step_therapy_required": payer_profile["step_therapy_required"],
+            "step_therapy_min_months": payer_profile["step_therapy_min_duration_months"],
+            "pa_validity_days": payer_profile["prior_auth_validity_days"],
+            "appeals_timeframe_days": payer_profile["appeals_timeframe_days"],
+            "preferred_portal": payer_profile["portal"],
+            "known_denial_patterns": payer_profile["known_denial_patterns"],
+            "payer_notes": payer_profile["notes"],
         },
         "clinical_criteria": matched_rule["clinical_criteria"],
         "required_documentation": matched_rule["required_documentation"],
