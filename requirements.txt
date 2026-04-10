@@ -47,6 +47,7 @@ google-cloud-storage==3.10.1
 google-cloud-trace==1.19.0
 google-crc32c==1.8.0
 google-genai==1.71.0
+google-generativeai
 google-resumable-media==2.8.2
 googleapis-common-protos==1.74.0
 graphviz==0.21
