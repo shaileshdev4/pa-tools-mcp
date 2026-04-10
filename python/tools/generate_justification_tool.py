@@ -27,8 +27,7 @@ async def generate_clinical_justification(
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        return create_text_response("ANTHROPIC_API_KEY is not set in environment", is_error=True)
-    return create_text_response(f"API key found, length: {len(api_key)}", is_error=False)
+        raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
     try:
         patient = json.loads(patient_data)
