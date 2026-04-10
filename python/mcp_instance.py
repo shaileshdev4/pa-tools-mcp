@@ -6,6 +6,7 @@ from tools.check_coverage_tool import check_coverage_requirements
 from tools.match_clinical_trials_tool import match_clinical_trials
 from tools.generate_justification_tool import generate_clinical_justification
 from tools.generate_appeal_tool import generate_appeal_letter
+from tools.check_documentation_tool import check_documentation_completeness
 
 mcp = FastMCP("PA Tools MCP", stateless_http=True, host="0.0.0.0")
 
@@ -28,3 +29,4 @@ mcp.tool(name="CheckCoverageRequirements", description="Checks prior authorizati
 mcp.tool(name="MatchClinicalTrials", description="Searches ClinicalTrials.gov for active recruiting trials matching a patient's condition.")(match_clinical_trials)
 mcp.tool(name="GenerateClinicalJustification", description="Generates a formal clinical justification letter for prior authorization using AI.")(generate_clinical_justification)
 mcp.tool(name="GenerateAppealLetter", description="Generates a formal appeal letter for prior authorization using AI.")(generate_appeal_letter)
+mcp.tool(name="CheckDocumentationCompleteness", description="Checks the completeness of the documentation for a given procedure or service.")(check_documentation_completeness)
