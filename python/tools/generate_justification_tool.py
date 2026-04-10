@@ -4,7 +4,7 @@ from mcp.server.fastmcp import Context
 from pydantic import Field
 from fhir_utilities import get_patient_id_if_context_exists
 from mcp_utilities import create_text_response
-import google.generativeai as genai
+from google import genai
 import json
 
 async def generate_clinical_justification(
@@ -28,7 +28,7 @@ async def generate_clinical_justification(
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY environment variable not set")
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     try:
         patient = json.loads(patient_data)
@@ -54,8 +54,10 @@ Format as a professional medical letter. Be specific, cite the patient's actual 
 Do not use placeholder text. Write as if this will be submitted to an insurance payer today.
 Keep it under 500 words but make every word count."""
 
-    model_client = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
-    response = model_client.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-preview-04-17",
+        contents=prompt,
+    )
     justification = response.text
 
     result = {
