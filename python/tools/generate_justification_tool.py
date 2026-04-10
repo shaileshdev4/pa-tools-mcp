@@ -55,7 +55,7 @@ Do not use placeholder text. Write as if this will be submitted to an insurance 
 Keep it under 500 words but make every word count."""
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash-preview-04-17",
+        model=os.environ.get("GOOGLE_MODEL") if os.environ.get("GOOGLE_MODEL") else "gemini-2.5-flash",
         contents=prompt,
     )
     justification = response.text
