@@ -18,6 +18,9 @@ async def generate_clinical_justification(
         str,
         Field(description="The procedure or service requiring prior authorization."),
     ],
+    physician_name: Annotated[str | None, Field(description="Attending physician full name. Extract from patient records.")] = None,
+    institution: Annotated[str | None, Field(description="Healthcare institution or hospital name.")] = None,
+    physician_npi: Annotated[str | None, Field(description="Physician NPI number if available.")] = None,
     patientId: Annotated[
         str | None,
         Field(description="Patient ID. Optional if patient context exists."),
@@ -36,6 +39,16 @@ async def generate_clinical_justification(
     except json.JSONDecodeError:
         patient = {"raw": patient_data}
 
+    # Try to extract from patient_data if not passed explicitly
+    if not physician_name:
+        physician_name = patient.get("attending_physician") or patient.get("physician") or "Attending Physician"
+    if not institution:
+        institution = patient.get("institution") or patient.get("facility") or "Healthcare Institution"
+    if not physician_npi:
+        physician_npi = patient.get("physician_npi") or "On File"
+
+    today = __import__('datetime').date.today().strftime('%B %d, %Y')
+
     prompt = f"""You are a clinical documentation specialist writing a prior authorization request for an insurance payer.
 
 PATIENT INFORMATION:
@@ -43,17 +56,18 @@ PATIENT INFORMATION:
 
 PROCEDURE REQUESTED: {procedure}
 
-Write a formal, medically accurate prior authorization justification letter that includes:
-1. Patient clinical summary (age, relevant diagnoses, current medications)
-2. Medical necessity statement — why this procedure is clinically required
-3. Supporting clinical evidence from the patient's history
-4. Prior treatments attempted and their outcomes (if available)
-5. Expected clinical benefit and outcomes
-6. Urgency level assessment
+ATTENDING PHYSICIAN: {physician_name} | {institution} | NPI: {physician_npi}
+DATE: {today}
 
-Format as a professional medical letter. Be specific, cite the patient's actual conditions and history.
-Do not use placeholder text. Write as if this will be submitted to an insurance payer today.
-Keep it under 500 words but make every word count."""
+Write a formal prior authorization justification letter. Rules:
+- Address to: Prior Authorization Department
+- FROM: {physician_name}, {institution}
+- Include: patient summary, medical necessity, clinical evidence, prior treatments, expected benefit, urgency
+- Cite specific lab values, dates, and protocol names from the patient data above
+- NEVER use [brackets] or placeholder text — use only real data provided
+- If data is missing, describe it clinically rather than using placeholders
+- Sign with {physician_name}'s name and credentials
+- Under 500 words"""
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
