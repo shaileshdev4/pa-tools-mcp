@@ -3,4 +3,4 @@ uvicorn>=0.32.0
 mcp>=1.9.0
 httpx>=0.28.0
 PyJWT>=2.10.0
-google-genai
+google-generativeai>=0.8.0
