@@ -41,11 +41,32 @@ async def generate_clinical_justification(
 
     # Try to extract from patient_data if not passed explicitly
     if not physician_name:
-        physician_name = patient.get("attending_physician") or patient.get("physician") or "Attending Physician"
+        physician_name = (
+            patient.get("attending_physician")
+            or patient.get("physician")
+            or patient.get("provider")
+            or "Attending Physician"
+        )
     if not institution:
-        institution = patient.get("institution") or patient.get("facility") or "Healthcare Institution"
+        institution = (
+            patient.get("institution")
+            or patient.get("facility")
+            or patient.get("hospital")
+            or patient.get("organization")
+            or None
+        )
     if not physician_npi:
-        physician_npi = patient.get("physician_npi") or "On File"
+        physician_npi = patient.get("physician_npi") or patient.get("npi") or None
+
+    physician_line = physician_name
+    if institution:
+        physician_line += f"\n{institution}"
+    if physician_npi:
+        physician_line += f"\nNPI: {physician_npi}"
+
+    from_line = physician_name
+    if institution:
+        from_line += f", {institution}"
 
     today = __import__('datetime').date.today().strftime('%B %d, %Y')
 
@@ -56,16 +77,20 @@ PATIENT INFORMATION:
 
 PROCEDURE REQUESTED: {procedure}
 
-ATTENDING PHYSICIAN: {physician_name} | {institution} | NPI: {physician_npi}
+ATTENDING PHYSICIAN: {physician_line}
 DATE: {today}
+- Address to: Prior Authorization Department, [Payer Name] - if payer name unknown, write "Prior Authorization Department"
 
 Write a formal prior authorization justification letter. Rules:
 - Address to: Prior Authorization Department
-- FROM: {physician_name}, {institution}
+- FROM: {from_line}
 - Include: patient summary, medical necessity, clinical evidence, prior treatments, expected benefit, urgency
 - Cite specific lab values, dates, and protocol names from the patient data above
 - NEVER use [brackets] or placeholder text — use only real data provided
+- If any field is unknown, use generic professional language — never use brackets or remove text
 - If data is missing, describe it clinically rather than using placeholders
+- If institution is not provided, sign with physician name only — never write 'Healthcare Institution'
+- If NPI is not provided, omit it — never write 'On File' or 'NPI: None'
 - Sign with {physician_name}'s name and credentials
 - Under 500 words"""
 

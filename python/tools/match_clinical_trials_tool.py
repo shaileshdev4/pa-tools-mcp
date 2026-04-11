@@ -8,11 +8,57 @@ import json
 
 CLINICAL_TRIALS_API = "https://clinicaltrials.gov/api/v2/studies"
 
+
+def _is_relevant(
+    study: dict, patient_age: int | None, country_pref: str | None
+) -> tuple[bool, int]:
+    """Returns (is_relevant, score). Higher score = more relevant."""
+    proto = study.get("protocolSection", {})
+    eligibility = proto.get("eligibilityModule", {})
+    contacts = proto.get("contactsLocationsModule", {})
+    locations = contacts.get("locations", [])
+    countries = [loc.get("country", "") for loc in locations]
+
+    score = 0
+
+    # Country preference scoring
+    if country_pref and any(country_pref in c for c in countries):
+        score += 10
+
+    # Age eligibility check
+    if patient_age:
+        min_age_str = eligibility.get("minimumAge", "0 Years")
+        max_age_str = eligibility.get("maximumAge", "999 Years")
+        try:
+            min_age = int(min_age_str.split()[0]) if "Year" in min_age_str else 0
+            max_age = int(max_age_str.split()[0]) if "Year" in max_age_str else 999
+            if min_age <= patient_age <= max_age:
+                score += 20
+            else:
+                return False, 0  # Exclude age-ineligible trials
+        except (ValueError, IndexError):
+            score += 5  # Age unclear, keep but lower score
+
+    return True, score
+
+
 async def match_clinical_trials(
     condition: Annotated[
         str,
-        Field(description="The medical condition or diagnosis to search trials for. E.g. 'diabetes', 'breast cancer', 'hypertension'."),
+        Field(description="The medical condition or diagnosis to search trials for."),
     ],
+    patient_age: Annotated[
+        int | None,
+        Field(description="Patient age in years. Used to filter age-appropriate trials."),
+    ] = None,
+    patient_sex: Annotated[
+        str | None,
+        Field(description="Patient sex: 'male' or 'female'. Used to filter eligible trials."),
+    ] = None,
+    country_preference: Annotated[
+        str | None,
+        Field(description="Preferred country for trials. E.g. 'United States'. Returns US trials first."),
+    ] = "United States",
     patientId: Annotated[
         str | None,
         Field(description="Patient ID. Optional if patient context exists."),
@@ -25,17 +71,27 @@ async def match_clinical_trials(
     params = {
         "query.cond": condition,
         "filter.overallStatus": "RECRUITING",
-        "pageSize": "5",
+        "pageSize": "10",  # fetch more, filter down to 5
         "format": "json",
-        "fields": "NCTId,BriefTitle,OverallStatus,BriefSummary,EligibilityCriteria,LocationCountry,Phase,Condition",
+        "fields": "NCTId,BriefTitle,OverallStatus,BriefSummary,EligibilityCriteria,LocationCountry,Phase,Condition,MinimumAge,MaximumAge,Sex",
     }
+
+    if country_preference:
+        params["query.locn"] = country_preference
+
+    # Add sex filter if provided
+    if patient_sex:
+        sex_map = {"female": "FEMALE", "male": "MALE"}
+        sex_filter = sex_map.get(patient_sex.lower())
+        if sex_filter:
+            params["filter.advanced"] = f"AREA[Sex]{sex_filter} OR AREA[Sex]ALL"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; PA-Agent/1.0; +https://promptopinion.ai)"
     }
     async with httpx.AsyncClient(timeout=15.0, headers=headers) as client:
         try:
-            
+
             response = await client.get(CLINICAL_TRIALS_API, params=params)
             if response.status_code == 403:
                 return create_text_response(json.dumps({
@@ -60,8 +116,19 @@ async def match_clinical_trials(
             "trials": [],
         }, indent=2))
 
-    trials = []
+    # Score and filter studies
+    scored = []
     for study in studies:
+        relevant, score = _is_relevant(study, patient_age, country_preference)
+        if relevant:
+            scored.append((score, study))
+
+    # Sort by score descending, take top 5
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top_studies = [s for _, s in scored[:5]]
+
+    trials = []
+    for study in top_studies:
         proto = study.get("protocolSection", {})
         id_module = proto.get("identificationModule", {})
         status_module = proto.get("statusModule", {})
@@ -82,6 +149,8 @@ async def match_clinical_trials(
             "conditions": conditions_module.get("conditionList", {}).get("condition", []),
             "summary": desc_module.get("briefSummary", "")[:300] + "..." if desc_module.get("briefSummary") else "",
             "eligibility_criteria_snippet": eligibility_module.get("eligibilityCriteria", "")[:400] + "..." if eligibility_module.get("eligibilityCriteria") else "",
+            "minimum_age": eligibility_module.get("minimumAge", "Not specified"),
+            "maximum_age": eligibility_module.get("maximumAge", "Not specified"),
             "countries": countries[:5],
             "clinicaltrials_url": f"https://clinicaltrials.gov/study/{id_module.get('nctId')}",
         })
@@ -93,5 +162,10 @@ async def match_clinical_trials(
         "source": "clinicaltrials.gov (live data)",
         "trials": trials,
     }
+
+    if not trials and studies:
+        result["message"] = (
+            "Trials were returned but none passed age/eligibility relevance filtering."
+        )
 
     return create_text_response(json.dumps(result, indent=2))

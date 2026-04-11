@@ -53,11 +53,32 @@ async def generate_appeal_letter(
         patient = {"raw": patient_data}
 
     if not physician_name:
-        physician_name = patient.get("attending_physician") or "Attending Physician"
+        physician_name = (
+            patient.get("attending_physician")
+            or patient.get("physician")
+            or patient.get("provider")
+            or "Attending Physician"
+        )
     if not institution:
-        institution = patient.get("institution") or "Healthcare Institution"
+        institution = (
+            patient.get("institution")
+            or patient.get("facility")
+            or patient.get("hospital")
+            or patient.get("organization")
+            or None
+        )
     if not physician_npi:
-        physician_npi = patient.get("physician_npi") or "On File"
+        physician_npi = patient.get("physician_npi") or patient.get("npi") or None
+
+    physician_line = physician_name
+    if institution:
+        physician_line += f"\n{institution}"
+    if physician_npi:
+        physician_line += f"\nNPI: {physician_npi}"
+
+    from_line = physician_name
+    if institution:
+        from_line += f", {institution}"
 
     today = __import__('datetime').date.today().strftime('%B %d, %Y')
 
@@ -68,7 +89,7 @@ PATIENT INFORMATION:
 
 PROCEDURE DENIED: {procedure}
 DENIAL REASON PROVIDED BY PAYER: {denial_reason}
-ATTENDING PHYSICIAN: {physician_name} | {institution} | NPI: {physician_npi}
+ATTENDING PHYSICIAN: {physician_line}
 DATE: {today}
 
 Write a formal, compelling appeal letter that:
@@ -81,11 +102,13 @@ Write a formal, compelling appeal letter that:
 7. Closes with a clear demand for reversal
 
 Rules:
-- FROM: {physician_name}, {institution}
+- FROM: {from_line}
 - Never use [brackets] or placeholder text
 - Be forceful and specific — this is an appeal, not a request
 - Cite specific lab values and dates from patient data
 - Reference 82% appeal overturn rate as precedent if denial seems automated
+- If institution is not provided, sign with physician name only — never write 'Healthcare Institution'
+- If NPI is not provided, omit it — never write 'On File' or 'NPI: None'
 - Under 600 words
 - Sign with {physician_name}'s full credentials"""
 

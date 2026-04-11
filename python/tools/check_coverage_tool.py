@@ -361,7 +361,13 @@ async def check_coverage_requirements(
         "cms_compliance": {
             "mandate": "CMS-0057-F (Interoperability and Prior Authorization Final Rule)",
             "effective_date": "January 1, 2026",
+            "payer_fhir_api_deadline": "January 1, 2027",
             "appeal_rights": "Patient has right to expedited appeal within 72 hours of denial",
+            "coverage_rules_status": (
+                "Payer-specific rules reflect documented policies as of 2026. "
+                "FHIR-based PA APIs mandated by CMS-0057-F go live January 2027 — "
+                "this tool will connect to live payer endpoints at that time."
+            ),
         },
         "payer_specific_rules": {
             "payer": payer_profile["name"],
