@@ -9,6 +9,17 @@ import httpx
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
+SAFETY_INSTRUCTION = """
+CRITICAL SAFETY INSTRUCTION — READ BEFORE GENERATING:
+1. Only include clinical facts EXPLICITLY present in the PATIENT INFORMATION JSON above.
+2. Do not infer, extrapolate, or assume any clinical history not directly stated.
+3. If a required field is missing or unclear, write exactly: [REQUIRES PHYSICIAN VERIFICATION]
+4. Every medication, date, dosage, lab value, and guideline reference must be traceable to the patient data.
+5. Do not cite specific NCCN guideline version numbers — cite "current NCCN guidelines" only.
+6. This is a DRAFT for physician review — accuracy is the physician's final responsibility.
+"""
+
+
 async def generate_clinical_justification(
     patient_data: Annotated[
         str,
@@ -81,14 +92,14 @@ ATTENDING PHYSICIAN: {physician_line}
 DATE: {today}
 - Address to: Prior Authorization Department, [Payer Name] - if payer name unknown, write "Prior Authorization Department"
 
+{SAFETY_INSTRUCTION}
+
 Write a formal prior authorization justification letter. Rules:
 - Address to: Prior Authorization Department
 - FROM: {from_line}
 - Include: patient summary, medical necessity, clinical evidence, prior treatments, expected benefit, urgency
-- Cite specific lab values, dates, and protocol names from the patient data above
-- NEVER use [brackets] or placeholder text — use only real data provided
-- If any field is unknown, use generic professional language — never use brackets or remove text
-- If data is missing, describe it clinically rather than using placeholders
+- Cite specific lab values, dates, and protocol names only when they appear in the patient data above
+- Do not invent facts; use [REQUIRES PHYSICIAN VERIFICATION] only when a required fact is missing from the JSON
 - If institution is not provided, sign with physician name only — never write 'Healthcare Institution'
 - If NPI is not provided, omit it — never write 'On File' or 'NPI: None'
 - Sign with {physician_name}'s name and credentials
@@ -118,6 +129,12 @@ Write a formal prior authorization justification letter. Rules:
         "justification_letter": justification,
         "generated_by": "Groq (llama-3.3-70b)",
         "ready_for_submission": True,
+        "safety_flags": {
+            "requires_physician_review": True,
+            "generated_from": "structured patient data — not clinical judgment",
+            "hallucination_risk": "LOW — letter must contain only fields present in patient JSON",
+            "verify_before_submission": "Physician must verify all clinical claims independently",
+        },
     }
 
     return create_text_response(json.dumps(result, indent=2))

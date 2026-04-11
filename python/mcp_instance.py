@@ -7,6 +7,8 @@ from tools.match_clinical_trials_tool import match_clinical_trials
 from tools.generate_justification_tool import generate_clinical_justification
 from tools.generate_appeal_tool import generate_appeal_letter
 from tools.check_documentation_tool import check_documentation_completeness
+from tools.submit_pa_request_tool import submit_pa_request
+from tools.create_pa_audit_record_tool import create_pa_audit_record
 
 mcp = FastMCP("PA Tools MCP", stateless_http=True, host="0.0.0.0")
 
@@ -30,3 +32,17 @@ mcp.tool(name="MatchClinicalTrials", description="Searches ClinicalTrials.gov fo
 mcp.tool(name="GenerateClinicalJustification", description="Generates a formal clinical justification letter for prior authorization using AI.")(generate_clinical_justification)
 mcp.tool(name="GenerateAppealLetter", description="Generates a formal appeal letter for prior authorization using AI.")(generate_appeal_letter)
 mcp.tool(name="CheckDocumentationCompleteness", description="Checks the completeness of the documentation for a given procedure or service.")(check_documentation_completeness)
+mcp.tool(
+    name="SubmitPARequest",
+    description=(
+        "Builds a Da Vinci PAS–style FHIR Claim bundle and POSTs to a PAS reference server "
+        "($submit). Use for CMS-0057-F alignment demos; production uses payer endpoints in 2027."
+    ),
+)(submit_pa_request)
+mcp.tool(
+    name="CreatePAAuditRecord",
+    description=(
+        "Creates a FHIR R4 AuditEvent in the workspace when a physician approves a PA packet "
+        "(requires FHIR write context)."
+    ),
+)(create_pa_audit_record)

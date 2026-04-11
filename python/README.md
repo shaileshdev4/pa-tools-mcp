@@ -1,5 +1,7 @@
 # Local development
 
+**HIPAA / Groq:** For production use with PHI, Groq offers a [Business Associate Addendum (BAA)](https://console.groq.com/docs/legal/customer-business-associate-addendum). Local demos should use synthetic or test data unless you have agreements in place.
+
 Create and activate a virtual environment first:
 
 ```bash

@@ -9,6 +9,17 @@ import httpx
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
+SAFETY_INSTRUCTION = """
+CRITICAL SAFETY INSTRUCTION — READ BEFORE GENERATING:
+1. Only include clinical facts EXPLICITLY present in the PATIENT INFORMATION JSON above.
+2. Do not infer, extrapolate, or assume any clinical history not directly stated.
+3. If a required field is missing or unclear, write exactly: [REQUIRES PHYSICIAN VERIFICATION]
+4. Every medication, date, dosage, lab value, and guideline reference must be traceable to the patient data.
+5. Do not cite specific NCCN guideline version numbers — cite "current NCCN guidelines" only.
+6. This is a DRAFT for physician review — accuracy is the physician's final responsibility.
+"""
+
+
 async def generate_appeal_letter(
     denial_reason: Annotated[
         str,
@@ -92,6 +103,8 @@ DENIAL REASON PROVIDED BY PAYER: {denial_reason}
 ATTENDING PHYSICIAN: {physician_line}
 DATE: {today}
 
+{SAFETY_INSTRUCTION}
+
 Write a formal, compelling appeal letter that:
 1. Opens by formally appealing the denial of {procedure}
 2. Directly addresses and rebuts the specific denial reason: "{denial_reason}"
@@ -103,9 +116,9 @@ Write a formal, compelling appeal letter that:
 
 Rules:
 - FROM: {from_line}
-- Never use [brackets] or placeholder text
+- Do not invent facts; use [REQUIRES PHYSICIAN VERIFICATION] only when a required fact is missing from the JSON
 - Be forceful and specific — this is an appeal, not a request
-- Cite specific lab values and dates from patient data
+- Cite specific lab values and dates only when present in patient data
 - Reference 82% appeal overturn rate as precedent if denial seems automated
 - If institution is not provided, sign with physician name only — never write 'Healthcare Institution'
 - If NPI is not provided, omit it — never write 'On File' or 'NPI: None'
@@ -138,6 +151,12 @@ Rules:
         "generated_by": "Groq (llama-3.3-70b)",
         "appeal_stats": "82% of PA appeals are overturned when properly documented (Medicare Advantage data)",
         "ready_for_submission": True,
+        "safety_flags": {
+            "requires_physician_review": True,
+            "generated_from": "structured patient data — not clinical judgment",
+            "hallucination_risk": "LOW — letter must contain only fields present in patient JSON",
+            "verify_before_submission": "Physician must verify all clinical claims independently",
+        },
     }
 
     return create_text_response(json.dumps(result, indent=2))

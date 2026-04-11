@@ -28,6 +28,20 @@ class FhirClient:
     async def read(self, path: str) -> dict | None:
         return await self._get(path)
 
+    async def post(self, path: str, resource: dict) -> tuple[int, dict | None]:
+        """POST a FHIR resource. Returns (status_code, body json or None)."""
+        headers = {"Content-Type": "application/fhir+json"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        url = self._build_url(path)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, json=resource)
+            try:
+                body = response.json() if response.content else None
+            except Exception:
+                body = None
+            return response.status_code, body
+
     async def search(
         self,
         resource_type: str,
