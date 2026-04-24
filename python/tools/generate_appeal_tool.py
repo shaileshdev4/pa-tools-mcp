@@ -20,6 +20,28 @@ CRITICAL SAFETY INSTRUCTION — READ BEFORE GENERATING:
 """
 
 
+def extract_verified_facts(patient: dict) -> dict:
+    """Deterministically extract only facts explicitly present in patient JSON."""
+    facts = {}
+
+    # Demographics
+    facts["name"] = patient.get("name") or patient.get("patient_name")
+    facts["dob"] = patient.get("dob") or patient.get("date_of_birth") or patient.get("birthDate")
+    facts["age"] = patient.get("age")
+    facts["gender"] = patient.get("gender")
+
+    # Clinical
+    facts["diagnoses"] = patient.get("conditions") or patient.get("diagnoses") or []
+    facts["medications"] = patient.get("medications") or patient.get("active_medications") or []
+    facts["labs"] = patient.get("labs") or patient.get("observations") or []
+    facts["treatment_history"] = patient.get("treatment_history") or patient.get("prior_treatments") or []
+    facts["physician"] = patient.get("attending_physician") or patient.get("physician")
+    facts["institution"] = patient.get("institution") or patient.get("facility")
+    facts["npi"] = patient.get("physician_npi") or patient.get("npi")
+
+    return {k: v for k, v in facts.items() if v is not None and v != [] and v != ""}
+
+
 async def generate_appeal_letter(
     denial_reason: Annotated[
         str,
@@ -81,6 +103,8 @@ async def generate_appeal_letter(
     if not physician_npi:
         physician_npi = patient.get("physician_npi") or patient.get("npi") or None
 
+    verified_facts = extract_verified_facts(patient)
+
     physician_line = physician_name
     if institution:
         physician_line += f"\n{institution}"
@@ -95,8 +119,10 @@ async def generate_appeal_letter(
 
     prompt = f"""You are a clinical documentation specialist writing a formal appeal against a prior authorization denial.
 
-PATIENT INFORMATION:
-{json.dumps(patient, indent=2)}
+VERIFIED PATIENT FACTS (extracted deterministically — only use these):
+{json.dumps(verified_facts, indent=2)}
+
+UNVERIFIED CLAIMS: Do not include any clinical fact not present in the above JSON.
 
 PROCEDURE DENIED: {procedure}
 DENIAL REASON PROVIDED BY PAYER: {denial_reason}
@@ -148,6 +174,8 @@ Rules:
         "procedure": procedure,
         "denial_reason_addressed": denial_reason,
         "appeal_letter": appeal_letter,
+        "verified_facts_used": verified_facts,
+        "extraction_method": "deterministic — no inference",
         "generated_by": "Groq (llama-3.3-70b)",
         "appeal_stats": "82% of PA appeals are overturned when properly documented (Medicare Advantage data)",
         "ready_for_submission": True,

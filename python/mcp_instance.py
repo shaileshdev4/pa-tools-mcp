@@ -9,6 +9,7 @@ from tools.generate_appeal_tool import generate_appeal_letter
 from tools.check_documentation_tool import check_documentation_completeness
 from tools.submit_pa_request_tool import submit_pa_request
 from tools.create_pa_audit_record_tool import create_pa_audit_record
+from tools.verify_pa_letter_tool import verify_pa_letter
 
 mcp = FastMCP("PA Tools MCP", stateless_http=True, host="0.0.0.0")
 
@@ -30,6 +31,10 @@ mcp.tool(name="GetPatientData", description="Gets comprehensive patient data fro
 mcp.tool(name="CheckCoverageRequirements", description="Checks prior authorization requirements for a given procedure or service.")(check_coverage_requirements)
 mcp.tool(name="MatchClinicalTrials", description="Searches ClinicalTrials.gov for active recruiting trials matching a patient's condition.")(match_clinical_trials)
 mcp.tool(name="GenerateClinicalJustification", description="Generates a formal clinical justification letter for prior authorization using AI.")(generate_clinical_justification)
+mcp.tool(
+    name="VerifyPALetter",
+    description="Verifies every clinical claim in a PA justification letter against source patient data. Returns safety score and unsupported claims.",
+)(verify_pa_letter)
 mcp.tool(name="GenerateAppealLetter", description="Generates a formal appeal letter for prior authorization using AI.")(generate_appeal_letter)
 mcp.tool(name="CheckDocumentationCompleteness", description="Checks the completeness of the documentation for a given procedure or service.")(check_documentation_completeness)
 mcp.tool(
