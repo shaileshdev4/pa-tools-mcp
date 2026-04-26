@@ -224,16 +224,6 @@ async def generate_clinical_justification(
     except json.JSONDecodeError:
         patient = {"raw": patient_data}
 
-    # Extract document text from clinical_notes_text if present in patient data
-    # This handles the case where pa_agent passes the full GetPatientData response
-    doc_texts = patient.get("clinical_notes_text", [])
-    if doc_texts:
-        combined_doc_text = "\n\n".join(doc_texts)
-        if raw_clinical_context:
-            raw_clinical_context = raw_clinical_context + "\n\n" + combined_doc_text
-        else:
-            raw_clinical_context = combined_doc_text
-
     if raw_clinical_context:
         _merge_raw_clinical_context(patient, raw_clinical_context)
 
