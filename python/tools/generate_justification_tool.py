@@ -32,8 +32,13 @@ def extract_verified_facts(patient: dict) -> dict:
 
     # Clinical
     facts["diagnoses"] = patient.get("conditions") or patient.get("diagnoses") or []
+    facts["diagnosis"] = patient.get("diagnosis")
+    facts["diagnosis_code"] = patient.get("diagnosis_code")
     facts["medications"] = patient.get("medications") or patient.get("active_medications") or []
     facts["labs"] = patient.get("labs") or patient.get("observations") or []
+    facts["remission_status"] = patient.get("remission_status")
+    facts["phase"] = patient.get("phase")
+    facts["payer"] = patient.get("payer")
     facts["treatment_history"] = patient.get("treatment_history") or patient.get("prior_treatments") or []
     facts["physician"] = patient.get("attending_physician") or patient.get("physician")
     facts["institution"] = patient.get("institution") or patient.get("facility")
