@@ -68,7 +68,11 @@ def _extract_after_label(raw_text: str, label: str) -> str | None:
 
 
 def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> None:
-    raw_lower = raw_clinical_context.lower()
+    # Strip commas from numbers so "1,100" matches as "1100"
+    raw_clinical_context_normalized = raw_clinical_context.replace(",", "")
+    raw_lower = raw_clinical_context_normalized.lower()
+    # Use normalized version for all parsing below
+    raw_clinical_context = raw_clinical_context_normalized
 
     def _extract_value(text: str, *labels) -> str | None:
         text_lower = text.lower()
