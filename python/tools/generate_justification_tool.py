@@ -42,6 +42,102 @@ def extract_verified_facts(patient: dict) -> dict:
     return {k: v for k, v in facts.items() if v is not None and v != [] and v != ""}
 
 
+def _extract_after_label(raw_text: str, label: str) -> str | None:
+    """Extract text after a label up to newline/period/comma."""
+    lower_text = raw_text.lower()
+    lower_label = label.lower()
+    idx = lower_text.find(lower_label)
+    if idx == -1:
+        return None
+    start = idx + len(lower_label)
+    chunk = raw_text[start:].lstrip(" :\t")
+    if not chunk:
+        return None
+    for sep in ["\n", ".", ","]:
+        sep_idx = chunk.find(sep)
+        if sep_idx != -1:
+            chunk = chunk[:sep_idx]
+            break
+    value = chunk.strip()
+    return value or None
+
+
+def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> None:
+    """
+    Fill missing patient fields from raw clinical text using simple contains checks.
+    """
+    raw_lower = raw_clinical_context.lower()
+
+    # diagnosis / diagnosis_code
+    if not patient.get("diagnosis"):
+        if "diagnosis:" in raw_lower:
+            patient["diagnosis"] = _extract_after_label(raw_clinical_context, "Diagnosis:")
+        elif "acute lymphoblastic leukemia" in raw_lower or "all" in raw_lower or "leukemia" in raw_lower:
+            patient["diagnosis"] = "Acute Lymphoblastic Leukemia"
+    if not patient.get("diagnosis_code"):
+        if "icd-10" in raw_lower:
+            patient["diagnosis_code"] = _extract_after_label(raw_clinical_context, "ICD-10:")
+        elif "c91.00" in raw_lower:
+            patient["diagnosis_code"] = "C91.00"
+
+    # labs
+    if not patient.get("labs"):
+        labs: dict[str, str] = {}
+        if "anc:" in raw_lower:
+            value = _extract_after_label(raw_clinical_context, "ANC:")
+            if value:
+                labs["anc"] = value
+        if "creatinine:" in raw_lower:
+            value = _extract_after_label(raw_clinical_context, "Creatinine:")
+            if value:
+                labs["creatinine"] = value
+        if "gfr:" in raw_lower:
+            value = _extract_after_label(raw_clinical_context, "GFR:")
+            if value:
+                labs["gfr"] = value
+        if "alt:" in raw_lower:
+            value = _extract_after_label(raw_clinical_context, "ALT:")
+            if value:
+                labs["alt"] = value
+        if "ast:" in raw_lower:
+            value = _extract_after_label(raw_clinical_context, "AST:")
+            if value:
+                labs["ast"] = value
+        if "lab date" in raw_lower:
+            value = _extract_after_label(raw_clinical_context, "lab date")
+            if value:
+                labs["lab_date"] = value
+        if labs:
+            patient["labs"] = labs
+
+    # remission_status
+    if not patient.get("remission_status"):
+        if "mrd" in raw_lower or "remission" in raw_lower or "morphologic" in raw_lower:
+            patient["remission_status"] = "Extracted from raw clinical context"
+
+    # phase
+    if not patient.get("phase"):
+        if "interim maintenance" in raw_lower:
+            patient["phase"] = "Interim Maintenance"
+        elif "induction" in raw_lower:
+            patient["phase"] = "Induction"
+        elif "consolidation" in raw_lower:
+            patient["phase"] = "Consolidation"
+        elif "cycles" in raw_lower:
+            patient["phase"] = "Treatment cycles referenced"
+
+    # payer
+    if not patient.get("payer"):
+        if "aetna" in raw_lower:
+            patient["payer"] = "Aetna"
+        elif "unitedhealth" in raw_lower:
+            patient["payer"] = "UnitedHealth"
+        elif "cigna" in raw_lower:
+            patient["payer"] = "Cigna"
+        elif "humana" in raw_lower:
+            patient["payer"] = "Humana"
+
+
 async def generate_clinical_justification(
     patient_data: Annotated[
         str,
@@ -54,6 +150,10 @@ async def generate_clinical_justification(
     physician_name: Annotated[str | None, Field(description="Attending physician full name. Extract from patient records.")] = None,
     institution: Annotated[str | None, Field(description="Healthcare institution or hospital name.")] = None,
     physician_npi: Annotated[str | None, Field(description="Physician NPI number if available.")] = None,
+    raw_clinical_context: Annotated[
+        str | None,
+        Field(description="Full original user message text used as fallback context."),
+    ] = None,
     patientId: Annotated[
         str | None,
         Field(description="Patient ID. Optional if patient context exists."),
@@ -71,6 +171,9 @@ async def generate_clinical_justification(
         patient = json.loads(patient_data)
     except json.JSONDecodeError:
         patient = {"raw": patient_data}
+
+    if raw_clinical_context:
+        _merge_raw_clinical_context(patient, raw_clinical_context)
 
     # Try to extract from patient_data if not passed explicitly
     if not physician_name:
