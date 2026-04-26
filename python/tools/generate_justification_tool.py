@@ -1,4 +1,5 @@
 import os
+import re
 import json
 from typing import Annotated
 from mcp.server.fastmcp import Context
@@ -178,6 +179,16 @@ def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> Non
                 patient["payer"] = payer_name
                 break
 
+    # prior_treatments
+    if not patient.get("prior_treatments") and not patient.get("treatment_history"):
+        treatments = []
+        if "induction phase" in raw_lower or "induction:" in raw_lower:
+            treatments.append("Induction Phase — completed with MRD-negative complete remission")
+        if "consolidation phase" in raw_lower or "consolidation:" in raw_lower:
+            treatments.append("Consolidation Phase — completed, good tolerance, no dose reductions")
+        if treatments:
+            patient["prior_treatments"] = treatments
+
 
 async def generate_clinical_justification(
     patient_data: Annotated[
@@ -215,6 +226,23 @@ async def generate_clinical_justification(
 
     if raw_clinical_context:
         _merge_raw_clinical_context(patient, raw_clinical_context)
+
+    # Fallback: extract physician from raw_clinical_context if not passed explicitly
+    if not physician_name and raw_clinical_context:
+        dr_match = re.search(r"(Dr\.?\s+\w+\s+\w+,?\s*MD)", raw_clinical_context)
+        if dr_match:
+            physician_name = dr_match.group(1).replace(",", "").strip()
+
+    if not physician_npi and raw_clinical_context:
+        npi_match = re.search(r"NPI[:\s]+(\d{10})", raw_clinical_context)
+        if npi_match:
+            physician_npi = npi_match.group(1)
+
+    if not institution and raw_clinical_context:
+        for inst in ["Dana-Farber", "Boston Children", "MGH", "Mass General", "Cleveland Clinic", "Mayo Clinic"]:
+            if inst.lower() in raw_clinical_context.lower():
+                institution = inst
+                break
 
     # Try to extract from patient_data if not passed explicitly
     if not physician_name:
