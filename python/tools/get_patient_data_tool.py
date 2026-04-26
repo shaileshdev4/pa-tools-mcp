@@ -93,7 +93,7 @@ async def get_patient_data(
                 import base64
                 try:
                     text = base64.b64decode(attachment["data"]).decode("utf-8")
-                    doc_texts.append(text[:500])
+                    doc_texts.append(text)
                 except Exception:
                     pass
 
