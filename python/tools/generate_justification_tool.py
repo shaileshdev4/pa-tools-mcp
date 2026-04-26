@@ -68,57 +68,83 @@ def _extract_after_label(raw_text: str, label: str) -> str | None:
 
 
 def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> None:
-    """
-    Fill missing patient fields from raw clinical text using simple contains checks.
-    """
     raw_lower = raw_clinical_context.lower()
 
-    # diagnosis / diagnosis_code
+    def _extract_value(text: str, *labels) -> str | None:
+        text_lower = text.lower()
+        for label in labels:
+            idx = text_lower.find(label.lower())
+            if idx == -1:
+                continue
+            start = idx + len(label)
+            chunk = text[start:].lstrip(" :\t")
+            if not chunk:
+                continue
+            for sep in ["\n", ".", ","]:
+                sep_idx = chunk.find(sep)
+                if sep_idx != -1:
+                    chunk = chunk[:sep_idx]
+                    break
+            value = chunk.strip()
+            if value:
+                return value
+        return None
+
+    # diagnosis
     if not patient.get("diagnosis"):
-        if "diagnosis:" in raw_lower:
-            patient["diagnosis"] = _extract_after_label(raw_clinical_context, "Diagnosis:")
-        elif "acute lymphoblastic leukemia" in raw_lower or "all" in raw_lower or "leukemia" in raw_lower:
+        val = _extract_value(raw_clinical_context, "Diagnosis:", "Diagnosis ")
+        if val:
+            patient["diagnosis"] = val
+        elif "acute lymphoblastic leukemia" in raw_lower:
             patient["diagnosis"] = "Acute Lymphoblastic Leukemia"
+        elif "leukemia" in raw_lower:
+            patient["diagnosis"] = "Leukemia"
+        elif "rheumatoid arthritis" in raw_lower:
+            patient["diagnosis"] = "Rheumatoid Arthritis"
+
+    # diagnosis_code
     if not patient.get("diagnosis_code"):
-        if "icd-10" in raw_lower:
-            patient["diagnosis_code"] = _extract_after_label(raw_clinical_context, "ICD-10:")
+        val = _extract_value(raw_clinical_context, "ICD-10:", "ICD10:", "diagnosis code:")
+        if val:
+            patient["diagnosis_code"] = val
         elif "c91.00" in raw_lower:
             patient["diagnosis_code"] = "C91.00"
+        elif "m05.79" in raw_lower:
+            patient["diagnosis_code"] = "M05.79"
 
-    # labs
+    # labs — check both "ANC:" and "ANC " (space, for PO summary format)
     if not patient.get("labs"):
         labs: dict[str, str] = {}
-        if "anc:" in raw_lower:
-            value = _extract_after_label(raw_clinical_context, "ANC:")
-            if value:
-                labs["anc"] = value
-        if "creatinine:" in raw_lower:
-            value = _extract_after_label(raw_clinical_context, "Creatinine:")
-            if value:
-                labs["creatinine"] = value
-        if "gfr:" in raw_lower:
-            value = _extract_after_label(raw_clinical_context, "GFR:")
-            if value:
-                labs["gfr"] = value
-        if "alt:" in raw_lower:
-            value = _extract_after_label(raw_clinical_context, "ALT:")
-            if value:
-                labs["alt"] = value
-        if "ast:" in raw_lower:
-            value = _extract_after_label(raw_clinical_context, "AST:")
-            if value:
-                labs["ast"] = value
-        if "lab date" in raw_lower:
-            value = _extract_after_label(raw_clinical_context, "lab date")
-            if value:
-                labs["lab_date"] = value
+        for key, labels in {
+            "anc":        ["ANC:", "ANC "],
+            "creatinine": ["Creatinine:", "Creatinine "],
+            "gfr":        ["GFR:", "GFR ", "eGFR:", "eGFR "],
+            "alt":        ["ALT:", "ALT "],
+            "ast":        ["AST:", "AST "],
+        }.items():
+            val = _extract_value(raw_clinical_context, *labels)
+            if val:
+                labs[key] = val
+        # GFR special case — ">60" pattern without label
+        if not labs.get("gfr") and (">60" in raw_lower or "> 60" in raw_lower):
+            labs["gfr"] = ">60"
+        # Lab date
+        val = _extract_value(raw_clinical_context, "Lab date:", "lab date:", "Labs ", "Labs:")
+        if val:
+            labs["lab_date"] = val
         if labs:
             patient["labs"] = labs
 
-    # remission_status
+    # remission_status — extract actual value, not a placeholder string
     if not patient.get("remission_status"):
-        if "mrd" in raw_lower or "remission" in raw_lower or "morphologic" in raw_lower:
-            patient["remission_status"] = "Extracted from raw clinical context"
+        if "mrd-negative" in raw_lower or "mrd negative" in raw_lower:
+            patient["remission_status"] = "MRD-negative"
+        elif "complete remission" in raw_lower or "complete molecular remission" in raw_lower:
+            patient["remission_status"] = "Complete Remission"
+        elif "morphologic" in raw_lower and "remission" in raw_lower:
+            patient["remission_status"] = "Morphologic Complete Remission"
+        elif "remission" in raw_lower:
+            patient["remission_status"] = "In remission (details in clinical documentation)"
 
     # phase
     if not patient.get("phase"):
@@ -128,19 +154,27 @@ def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> Non
             patient["phase"] = "Induction"
         elif "consolidation" in raw_lower:
             patient["phase"] = "Consolidation"
-        elif "cycles" in raw_lower:
-            patient["phase"] = "Treatment cycles referenced"
+        elif "maintenance" in raw_lower:
+            patient["phase"] = "Maintenance"
+        elif "cycles 3" in raw_lower or "cycle 3" in raw_lower:
+            patient["phase"] = "Cycles 3-4"
 
     # payer
     if not patient.get("payer"):
-        if "aetna" in raw_lower:
-            patient["payer"] = "Aetna"
-        elif "unitedhealth" in raw_lower:
-            patient["payer"] = "UnitedHealth"
-        elif "cigna" in raw_lower:
-            patient["payer"] = "Cigna"
-        elif "humana" in raw_lower:
-            patient["payer"] = "Humana"
+        payer_map = {
+            "aetna": "Aetna",
+            "unitedhealth": "UnitedHealthcare",
+            "united health": "UnitedHealthcare",
+            "blue cross": "Blue Cross Blue Shield",
+            "bcbs": "Blue Cross Blue Shield",
+            "cigna": "Cigna",
+            "humana": "Humana",
+            "medicare": "Medicare Advantage",
+        }
+        for keyword, payer_name in payer_map.items():
+            if keyword in raw_lower:
+                patient["payer"] = payer_name
+                break
 
 
 async def generate_clinical_justification(

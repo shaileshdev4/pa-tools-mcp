@@ -342,10 +342,27 @@ async def check_coverage_requirements(
     payer_profile = DEFAULT_PAYER
     if payer:
         payer_lower = payer.lower().replace(" ", "").replace("-", "")
-        for key, profile in PAYER_PROFILES.items():
-            if key in payer_lower or payer_lower in key:
-                payer_profile = profile
+        PAYER_ALIASES = {
+            "bcbs": "bcbs",
+            "bluecross": "bcbs",
+            "blueshield": "bcbs",
+            "anthem": "bcbs",
+            "united": "unitedhealth",
+            "uhc": "unitedhealth",
+            "optum": "unitedhealth",
+            "aetna": "aetna",
+            "cigna": "cigna",
+            "medicare": "medicare",
+            "medicareadvantage": "medicare",
+            "humana": "medicare",
+        }
+        matched_key = None
+        for alias, key in PAYER_ALIASES.items():
+            if alias in payer_lower:
+                matched_key = key
                 break
+        if matched_key and matched_key in PAYER_PROFILES:
+            payer_profile = PAYER_PROFILES[matched_key]
 
     confidence = _compute_confidence_score(procedure_lower, matched_rule)
 
