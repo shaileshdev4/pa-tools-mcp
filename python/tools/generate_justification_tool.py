@@ -1,17 +1,16 @@
 import os
 import re
 import json
-import base64
+import logging
 from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 from fhir_utilities import get_patient_id_if_context_exists
-from fhir_utilities import get_fhir_context
-from fhir_client import FhirClient
 from mcp_utilities import create_text_response
 import httpx
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+logger = logging.getLogger(__name__)
 
 SAFETY_INSTRUCTION = """
 CRITICAL SAFETY INSTRUCTION — READ BEFORE GENERATING:
@@ -193,35 +192,14 @@ def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> Non
             patient["prior_treatments"] = treatments
 
 
-async def _fetch_document_text(patientId: str, ctx) -> str:
-    """Fetch DocumentReference text directly from FHIR. No LLM involved."""
-    try:
-        fhir_context = get_fhir_context(ctx)
-        if not fhir_context or not fhir_context.token:
-            return ""
-        client = FhirClient(base_url=fhir_context.url, token=fhir_context.token)
-        documents = await client.search(
-            "DocumentReference",
-            {"patient": patientId, "_count": "5", "_sort": "-date"}
-        )
-        if not documents:
-            return ""
-        texts = []
-        for entry in documents.get("entry", []):
-            resource = entry.get("resource", {})
-            for content in resource.get("content", []):
-                attachment = content.get("attachment", {})
-                if attachment.get("data"):
-                    try:
-                        text = base64.b64decode(
-                            attachment["data"]
-                        ).decode("utf-8")
-                        texts.append(text)
-                    except Exception:
-                        pass
-        return "\n\n".join(texts)
-    except Exception:
-        return ""
+def _debug_pipeline_enabled() -> bool:
+    return os.getenv("DEBUG_PA_PIPELINE", "").lower() in {"1", "true", "yes", "on"}
+
+
+def _debug_log(message: str, **fields) -> None:
+    if not _debug_pipeline_enabled():
+        return
+    logger.info("[PA_PIPELINE] %s | %s", message, json.dumps(fields, default=str))
 
 
 async def generate_clinical_justification(
@@ -233,6 +211,10 @@ async def generate_clinical_justification(
         str,
         Field(description="The procedure or service requiring prior authorization."),
     ],
+    document_text: Annotated[
+        str | None,
+        Field(description="Full text from patient's clinical documents. Pass the clinical_notes_text from GetPatientData joined with newlines."),
+    ] = None,
     physician_name: Annotated[str | None, Field(description="Attending physician full name. Extract from patient records.")] = None,
     institution: Annotated[str | None, Field(description="Healthcare institution or hospital name.")] = None,
     physician_npi: Annotated[str | None, Field(description="Physician NPI number if available.")] = None,
@@ -249,10 +231,16 @@ async def generate_clinical_justification(
     if not patientId:
         patientId = get_patient_id_if_context_exists(ctx)
 
-    # Fetch document text directly from FHIR — bypasses Gemini data passing
-    document_text = ""
-    if patientId:
-        document_text = await _fetch_document_text(patientId, ctx)
+    _debug_log(
+        "generate_clinical_justification:start",
+        patient_id=patientId,
+        patient_data_len=len(patient_data or ""),
+        raw_clinical_context_len=len(raw_clinical_context or ""),
+        document_text_len=len(document_text or ""),
+        has_physician_name=bool(physician_name),
+        has_institution=bool(institution),
+        has_physician_npi=bool(physician_npi),
+    )
 
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
@@ -263,16 +251,66 @@ async def generate_clinical_justification(
     except json.JSONDecodeError:
         patient = {"raw": patient_data}
 
-    # Merge document text into raw_clinical_context regardless of what pa_agent passed
+    _debug_log(
+        "patient_data:parsed",
+        parsed_type=type(patient).__name__,
+        keys=list(patient.keys()) if isinstance(patient, dict) else [],
+    )
+    notes_list = []
+    if isinstance(patient, dict):
+        maybe_notes = patient.get("clinical_notes_text", [])
+        if isinstance(maybe_notes, list):
+            notes_list = [t for t in maybe_notes if isinstance(t, str)]
+    _debug_log(
+        "patient_data:clinical_notes_text",
+        notes_count=len(notes_list),
+        total_chars=sum(len(t) for t in notes_list),
+    )
+    _debug_log(
+        "document_text:received",
+        length=len(document_text or ""),
+        is_empty=not bool(document_text),
+    )
+
+    # Build raw_clinical_context from all available sources (no FHIR calls in this tool path)
     sources = []
     if raw_clinical_context:
         sources.append(raw_clinical_context)
     if document_text:
         sources.append(document_text)
+    notes_count = 0
+    if isinstance(patient, dict):
+        notes = patient.get("clinical_notes_text", [])
+        if isinstance(notes, list) and notes:
+            notes_count = len(notes)
+            sources.append("\n\n".join(notes))
     raw_clinical_context = "\n\n".join(sources) if sources else None
+    _debug_log(
+        "raw_context:assembled",
+        source_count=len(sources),
+        notes_count=notes_count,
+        merged_raw_context_len=len(raw_clinical_context or ""),
+    )
+    _debug_log(
+        "raw_context:document_text_preview",
+        first_200_chars=(raw_clinical_context[:200] if raw_clinical_context else None),
+        contains_anc=("anc" in raw_clinical_context.lower() if raw_clinical_context else False),
+        contains_npi=("npi" in raw_clinical_context.lower() if raw_clinical_context else False),
+    )
 
     if raw_clinical_context:
         _merge_raw_clinical_context(patient, raw_clinical_context)
+        _debug_log(
+            "raw_context:merged_into_patient",
+            has_diagnosis=bool(patient.get("diagnosis")),
+            has_diagnosis_code=bool(patient.get("diagnosis_code")),
+            has_labs=bool(patient.get("labs")),
+            remission_status=patient.get("remission_status"),
+            phase=patient.get("phase"),
+            payer=patient.get("payer"),
+            has_prior_treatments=bool(patient.get("prior_treatments") or patient.get("treatment_history")),
+            has_physician_npi=bool(patient.get("physician_npi") or patient.get("npi")),
+        )
 
     # Fallback: extract physician from raw_clinical_context if not passed explicitly
     if not physician_name and raw_clinical_context:
@@ -310,7 +348,22 @@ async def generate_clinical_justification(
     if not physician_npi:
         physician_npi = patient.get("physician_npi") or patient.get("npi") or None
 
+    _debug_log(
+        "provider_fields:resolved",
+        physician_name=physician_name,
+        institution=institution,
+        physician_npi=physician_npi,
+    )
+
     verified_facts = extract_verified_facts(patient)
+    _debug_log(
+        "verified_facts:built",
+        fact_keys=list(verified_facts.keys()),
+        labs_type=type(verified_facts.get("labs")).__name__ if verified_facts.get("labs") is not None else None,
+        treatment_history_count=len(verified_facts.get("treatment_history", []))
+        if isinstance(verified_facts.get("treatment_history"), list)
+        else None,
+    )
 
     physician_line = physician_name
     if institution:
@@ -367,6 +420,11 @@ Write a formal prior authorization justification letter. Rules:
         response.raise_for_status()
         data = response.json()
         justification = data["choices"][0]["message"]["content"]
+        _debug_log(
+            "groq_response:received",
+            response_status=response.status_code,
+            justification_len=len(justification or ""),
+        )
 
     result = {
         "patient_id": patientId,
@@ -383,5 +441,12 @@ Write a formal prior authorization justification letter. Rules:
             "verify_before_submission": "Physician must verify all clinical claims independently",
         },
     }
+
+    _debug_log(
+        "generate_clinical_justification:complete",
+        patient_id=patientId,
+        ready_for_submission=result.get("ready_for_submission"),
+        extraction_method=result.get("extraction_method"),
+    )
 
     return create_text_response(json.dumps(result, indent=2))
