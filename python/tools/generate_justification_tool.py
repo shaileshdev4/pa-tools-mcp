@@ -202,6 +202,20 @@ def _debug_log(message: str, **fields) -> None:
     logger.info("[PA_PIPELINE] %s | %s", message, json.dumps(fields, default=str))
 
 
+def _try_parse_nested_json(raw_value: str) -> dict | None:
+    """Best-effort recovery when patient_data arrives as wrapped JSON string."""
+    if not isinstance(raw_value, str):
+        return None
+    candidate = raw_value.strip()
+    if not candidate:
+        return None
+    try:
+        parsed = json.loads(candidate)
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
 async def generate_clinical_justification(
     patient_data: Annotated[
         str,
@@ -251,10 +265,22 @@ async def generate_clinical_justification(
     except json.JSONDecodeError:
         patient = {"raw": patient_data}
 
+    nested_parse_recovered = False
+    if (
+        isinstance(patient, dict)
+        and set(patient.keys()) == {"raw"}
+        and isinstance(patient.get("raw"), str)
+    ):
+        recovered = _try_parse_nested_json(patient["raw"])
+        if recovered is not None:
+            patient = recovered
+            nested_parse_recovered = True
+
     _debug_log(
         "patient_data:parsed",
         parsed_type=type(patient).__name__,
         keys=list(patient.keys()) if isinstance(patient, dict) else [],
+        nested_parse_recovered=nested_parse_recovered,
     )
     notes_list = []
     if isinstance(patient, dict):
@@ -402,6 +428,12 @@ Write a formal prior authorization justification letter. Rules:
 - If NPI is not provided, omit it — never write 'On File' or 'NPI: None'
 - Sign with {physician_name}'s name and credentials
 - Under 500 words"""
+    _debug_log(
+        "llm_prompt:prepared",
+        llm_prompt_len=len(prompt),
+        prompt_preview=prompt[:300],
+        verified_fact_count=len(verified_facts),
+    )
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(

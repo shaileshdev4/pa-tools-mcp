@@ -10,14 +10,25 @@ CLINICAL_TRIALS_API = "https://clinicaltrials.gov/api/v2/studies"
 
 
 def _is_relevant(
-    study: dict, patient_age: int | None, country_pref: str | None
+    study: dict, patient_age: int | None, country_pref: str | None, patient_sex: str | None, condition: str
 ) -> tuple[bool, int]:
     """Returns (is_relevant, score). Higher score = more relevant."""
     proto = study.get("protocolSection", {})
     eligibility = proto.get("eligibilityModule", {})
+    conditions_module = proto.get("conditionsModule", {})
+    design_module = proto.get("designModule", {})
     contacts = proto.get("contactsLocationsModule", {})
     locations = contacts.get("locations", [])
     countries = [loc.get("country", "") for loc in locations]
+    conditions_raw = []
+    if isinstance(conditions_module.get("conditions"), list):
+        conditions_raw.extend(conditions_module.get("conditions", []))
+    condition_list = conditions_module.get("conditionList", {})
+    if isinstance(condition_list, dict) and isinstance(condition_list.get("condition"), list):
+        conditions_raw.extend(condition_list.get("condition", []))
+    study_conditions = [c.lower() for c in conditions_raw if isinstance(c, str)]
+    summary_blob = " ".join(study_conditions)
+    query_condition = (condition or "").lower()
 
     score = 0
 
@@ -38,6 +49,41 @@ def _is_relevant(
                 return False, 0  # Exclude age-ineligible trials
         except (ValueError, IndexError):
             score += 5  # Age unclear, keep but lower score
+
+    # Sex compatibility check
+    if patient_sex:
+        sex_value = (eligibility.get("sex") or "").lower()
+        patient_sex_lower = patient_sex.lower()
+        if sex_value and sex_value not in {"all", patient_sex_lower}:
+            return False, 0
+        if sex_value in {"all", patient_sex_lower}:
+            score += 8
+
+    # Prefer studies matching ALL/B-cell context, de-rank unrelated populations.
+    if "acute lymphoblastic leukemia" in query_condition:
+        if "acute lymphoblastic leukemia" in summary_blob or "all" in summary_blob:
+            score += 25
+        else:
+            score -= 15
+        if "b-cell" in summary_blob or "b cell" in summary_blob:
+            score += 10
+        if "t cell" in summary_blob or "t-cell" in summary_blob:
+            score -= 12
+
+    # Prefer phase 2/3 for actionable adult treatment options.
+    phases_raw = []
+    if isinstance(design_module.get("phases"), list):
+        phases_raw.extend(design_module.get("phases", []))
+    phase_list = design_module.get("phaseList", {})
+    if isinstance(phase_list, dict) and isinstance(phase_list.get("phase"), list):
+        phases_raw.extend(phase_list.get("phase", []))
+    phases = [p.lower() for p in phases_raw if isinstance(p, str)]
+    if any("phase 3" in p for p in phases):
+        score += 10
+    elif any("phase 2" in p for p in phases):
+        score += 7
+    elif any("phase 1" in p for p in phases):
+        score -= 4
 
     return True, score
 
@@ -119,7 +165,7 @@ async def match_clinical_trials(
     # Score and filter studies
     scored = []
     for study in studies:
-        relevant, score = _is_relevant(study, patient_age, country_preference)
+        relevant, score = _is_relevant(study, patient_age, country_preference, patient_sex, condition)
         if relevant:
             scored.append((score, study))
 
