@@ -1,10 +1,13 @@
 import os
 import re
 import json
+import base64
 from typing import Annotated
 from mcp.server.fastmcp import Context
 from pydantic import Field
 from fhir_utilities import get_patient_id_if_context_exists
+from fhir_utilities import get_fhir_context
+from fhir_client import FhirClient
 from mcp_utilities import create_text_response
 import httpx
 
@@ -190,6 +193,37 @@ def _merge_raw_clinical_context(patient: dict, raw_clinical_context: str) -> Non
             patient["prior_treatments"] = treatments
 
 
+async def _fetch_document_text(patientId: str, ctx) -> str:
+    """Fetch DocumentReference text directly from FHIR. No LLM involved."""
+    try:
+        fhir_context = get_fhir_context(ctx)
+        if not fhir_context or not fhir_context.token:
+            return ""
+        client = FhirClient(base_url=fhir_context.url, token=fhir_context.token)
+        documents = await client.search(
+            "DocumentReference",
+            {"patient": patientId, "_count": "5", "_sort": "-date"}
+        )
+        if not documents:
+            return ""
+        texts = []
+        for entry in documents.get("entry", []):
+            resource = entry.get("resource", {})
+            for content in resource.get("content", []):
+                attachment = content.get("attachment", {})
+                if attachment.get("data"):
+                    try:
+                        text = base64.b64decode(
+                            attachment["data"]
+                        ).decode("utf-8")
+                        texts.append(text)
+                    except Exception:
+                        pass
+        return "\n\n".join(texts)
+    except Exception:
+        return ""
+
+
 async def generate_clinical_justification(
     patient_data: Annotated[
         str,
@@ -215,6 +249,11 @@ async def generate_clinical_justification(
     if not patientId:
         patientId = get_patient_id_if_context_exists(ctx)
 
+    # Fetch document text directly from FHIR — bypasses Gemini data passing
+    document_text = ""
+    if patientId:
+        document_text = await _fetch_document_text(patientId, ctx)
+
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY environment variable not set")
@@ -223,6 +262,14 @@ async def generate_clinical_justification(
         patient = json.loads(patient_data)
     except json.JSONDecodeError:
         patient = {"raw": patient_data}
+
+    # Merge document text into raw_clinical_context regardless of what pa_agent passed
+    sources = []
+    if raw_clinical_context:
+        sources.append(raw_clinical_context)
+    if document_text:
+        sources.append(document_text)
+    raw_clinical_context = "\n\n".join(sources) if sources else None
 
     if raw_clinical_context:
         _merge_raw_clinical_context(patient, raw_clinical_context)
