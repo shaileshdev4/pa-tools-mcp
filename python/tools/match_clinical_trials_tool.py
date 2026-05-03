@@ -46,7 +46,7 @@ def _is_relevant(
             if min_age <= patient_age <= max_age:
                 score += 20
             else:
-                return False, 0  # Exclude age-ineligible trials
+                score -= 15  # Outside stated range — penalize, don't hard-drop (CT.gov age text is messy)
         except (ValueError, IndexError):
             score += 5  # Age unclear, keep but lower score
 
@@ -55,7 +55,11 @@ def _is_relevant(
 
     # Prefer studies matching ALL/B-cell context, de-rank unrelated populations.
     if "acute lymphoblastic leukemia" in query_condition:
-        if "acute lymphoblastic leukemia" in summary_blob or "all" in summary_blob:
+        if (
+            "acute lymphoblastic leukemia" in summary_blob
+            or " all " in summary_blob
+            or summary_blob.startswith("all ")
+        ):
             score += 25
         else:
             score -= 15
@@ -115,7 +119,7 @@ async def match_clinical_trials(
     params = {
         "query.cond": condition,
         "filter.overallStatus": "RECRUITING",
-        "pageSize": "10",  # fetch more, filter down to 5
+        "pageSize": "20",  # fetch more, rank down to top 5
         "format": "json",
         "fields": "NCTId,BriefTitle,OverallStatus,BriefSummary,EligibilityCriteria,LocationCountry,Phase,Condition,MinimumAge,MaximumAge,Sex",
     }
@@ -180,11 +184,20 @@ async def match_clinical_trials(
         locations = contacts_module.get("locations", [])
         countries = list(set(loc.get("country", "") for loc in locations if loc.get("country")))
 
+        if design_module.get("phaseList"):
+            phase_raw = design_module.get("phaseList", {}).get("phase", ["N/A"])
+            if isinstance(phase_raw, list):
+                phase_display = phase_raw[0] if phase_raw else "N/A"
+            else:
+                phase_display = phase_raw if phase_raw is not None else "N/A"
+        else:
+            phase_display = "N/A"
+
         trials.append({
             "nct_id": id_module.get("nctId"),
             "title": id_module.get("briefTitle"),
             "status": status_module.get("overallStatus"),
-            "phase": design_module.get("phaseList", {}).get("phase", ["N/A"])[0] if design_module.get("phaseList") else "N/A",
+            "phase": phase_display,
             "conditions": conditions_module.get("conditionList", {}).get("condition", []),
             "summary": desc_module.get("briefSummary", "")[:300] + "..." if desc_module.get("briefSummary") else "",
             "eligibility_criteria_snippet": eligibility_module.get("eligibilityCriteria", "")[:400] + "..." if eligibility_module.get("eligibilityCriteria") else "",
@@ -204,7 +217,7 @@ async def match_clinical_trials(
 
     if not trials and studies:
         result["message"] = (
-            "Trials were returned but none passed age/eligibility relevance filtering."
+            "Trials were returned from ClinicalTrials.gov but none were assembled into the response."
         )
 
     return create_text_response(json.dumps(result, indent=2))
