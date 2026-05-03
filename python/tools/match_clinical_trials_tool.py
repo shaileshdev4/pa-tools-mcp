@@ -10,7 +10,7 @@ CLINICAL_TRIALS_API = "https://clinicaltrials.gov/api/v2/studies"
 
 
 def _is_relevant(
-    study: dict, patient_age: int | None, country_pref: str | None, patient_sex: str | None, condition: str
+    study: dict, patient_age: int | None, country_pref: str | None, condition: str
 ) -> tuple[bool, int]:
     """Returns (is_relevant, score). Higher score = more relevant."""
     proto = study.get("protocolSection", {})
@@ -50,14 +50,8 @@ def _is_relevant(
         except (ValueError, IndexError):
             score += 5  # Age unclear, keep but lower score
 
-    # Sex compatibility check
-    if patient_sex:
-        sex_value = (eligibility.get("sex") or "").lower()
-        patient_sex_lower = patient_sex.lower()
-        if sex_value and sex_value not in {"all", patient_sex_lower}:
-            return False, 0
-        if sex_value in {"all", patient_sex_lower}:
-            score += 8
+    # Sex: do not filter here — ClinicalTrials.gov sex query syntax is unreliable;
+    # age + relevance scoring is enough to surface plausible trials.
 
     # Prefer studies matching ALL/B-cell context, de-rank unrelated populations.
     if "acute lymphoblastic leukemia" in query_condition:
@@ -99,7 +93,9 @@ async def match_clinical_trials(
     ] = None,
     patient_sex: Annotated[
         str | None,
-        Field(description="Patient sex: 'male' or 'female'. Used to filter eligible trials."),
+        Field(
+            description="Deprecated — ignored. Do not rely on sex for API filtering; age is applied post-fetch.",
+        ),
     ] = None,
     country_preference: Annotated[
         str | None,
@@ -111,6 +107,8 @@ async def match_clinical_trials(
     ] = None,
     ctx: Context = None,
 ) -> str:
+    _ = patient_sex  # optional arg ignored; CT.gov sex filters removed (too fragile)
+
     if not patientId:
         patientId = get_patient_id_if_context_exists(ctx)
 
@@ -125,12 +123,7 @@ async def match_clinical_trials(
     if country_preference:
         params["query.locn"] = country_preference
 
-    # Add sex filter if provided
-    if patient_sex:
-        sex_map = {"female": "FEMALE", "male": "MALE"}
-        sex_filter = sex_map.get(patient_sex.lower())
-        if sex_filter:
-            params["filter.advanced"] = f"AREA[Sex]{sex_filter} OR AREA[Sex]ALL"
+    # Intentionally no filter.advanced / sex filter — CT.gov syntax often returns zero studies.
 
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; PA-Agent/1.0; +https://promptopinion.ai)"
@@ -165,7 +158,7 @@ async def match_clinical_trials(
     # Score and filter studies
     scored = []
     for study in studies:
-        relevant, score = _is_relevant(study, patient_age, country_preference, patient_sex, condition)
+        relevant, score = _is_relevant(study, patient_age, country_preference, condition)
         if relevant:
             scored.append((score, study))
 
