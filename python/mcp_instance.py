@@ -10,6 +10,7 @@ from tools.check_documentation_tool import check_documentation_completeness
 from tools.submit_pa_request_tool import submit_pa_request
 from tools.create_pa_audit_record_tool import create_pa_audit_record
 from tools.verify_pa_letter_tool import verify_pa_letter
+from tools.prepare_peer_to_peer_tool import prepare_peer_to_peer
 
 mcp = FastMCP("PA Tools MCP", stateless_http=True, host="0.0.0.0")
 
@@ -36,6 +37,13 @@ mcp.tool(
     description="Verifies every clinical claim in a PA justification letter against source patient data. Returns safety score and unsupported claims.",
 )(verify_pa_letter)
 mcp.tool(name="GenerateAppealLetter", description="Generates a formal appeal letter for prior authorization using AI.")(generate_appeal_letter)
+mcp.tool(
+    name="PreparePeerToPeer",
+    description=(
+        "Prepares a physician for a peer-to-peer review call with a payer medical director after PA denial. "
+        "Generates structured talking points, anticipated objections with rebuttals, and call strategy."
+    ),
+)(prepare_peer_to_peer)
 mcp.tool(name="CheckDocumentationCompleteness", description="Checks the completeness of the documentation for a given procedure or service.")(check_documentation_completeness)
 mcp.tool(
     name="SubmitPARequest",
